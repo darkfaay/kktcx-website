@@ -1,0 +1,163 @@
+{
+  "project_name": "KKTCX",
+  "design_philosophy": {
+    "theme": "Jewel & Luxury",
+    "mood": "Exclusive, Discreet, Social, High-End",
+    "core_concept": "The concierge of social life in Northern Cyprus. Not a dating app, but a social discovery club.",
+    "visual_style": "Cinematic Dark Mode. Deep backgrounds, champagne gold accents, glassmorphism, high-quality photography."
+  },
+  "typography": {
+    "font_family": {
+      "heading": "Playfair Display, serif",
+      "body": "Manrope, sans-serif",
+      "accent": "Cormorant Garamond, serif"
+    },
+    "scale": {
+      "h1": "text-4xl md:text-6xl font-bold tracking-tight leading-none",
+      "h2": "text-3xl md:text-5xl font-semibold tracking-tight",
+      "h3": "text-2xl md:text-3xl font-medium",
+      "body": "text-base md:text-lg leading-relaxed text-muted-foreground",
+      "caption": "text-sm tracking-wide uppercase text-muted-foreground/80"
+    },
+    "installation": "Import via Google Fonts in index.css: @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');"
+  },
+  "colors": {
+    "palette": {
+      "background": {
+        "default": "#050505",
+        "paper": "#0F0F10",
+        "subtle": "#18181B"
+      },
+      "primary": {
+        "main": "#D4AF37",
+        "light": "#F3E5AB",
+        "dark": "#997B19",
+        "foreground": "#000000"
+      },
+      "secondary": {
+        "main": "#1E293B",
+        "foreground": "#FFFFFF"
+      },
+      "accent": {
+        "main": "#10B981",
+        "glow": "rgba(212, 175, 55, 0.5)"
+      },
+      "text": {
+        "primary": "#F8FAFC",
+        "secondary": "#94A3B8",
+        "muted": "#475569"
+      },
+      "status": {
+        "success": "#059669",
+        "error": "#DC2626",
+        "warning": "#D97706"
+      }
+    },
+    "gradients": {
+      "gold_rush": "linear-gradient(135deg, #D4AF37 0%, #F3E5AB 50%, #997B19 100%)",
+      "night_sky": "linear-gradient(to bottom, #050505 0%, #0F0F10 100%)",
+      "card_overlay": "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0) 100%)"
+    },
+    "usage_rules": {
+      "primary_action": "bg-[#D4AF37] text-black hover:bg-[#F3E5AB] transition-colors duration-300",
+      "glass_surface": "bg-white/5 backdrop-blur-md border border-white/10"
+    }
+  },
+  "spacing": {
+    "container": "container mx-auto px-4 md:px-8 lg:px-12",
+    "section_padding": "py-16 md:py-24",
+    "card_padding": "p-6",
+    "grid_gap": "gap-6 md:gap-8"
+  },
+  "components": {
+    "buttons": {
+      "primary": "rounded-full bg-[#D4AF37] text-black font-semibold hover:bg-[#F3E5AB] shadow-[0_0_15px_rgba(212,175,55,0.3)] transition-all",
+      "outline": "rounded-full border border-[#D4AF37]/50 text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]",
+      "ghost": "text-muted-foreground hover:text-white hover:bg-white/5"
+    },
+    "cards": {
+      "profile": "relative overflow-hidden rounded-xl border border-white/10 bg-[#0F0F10] hover:border-[#D4AF37]/50 transition-colors group",
+      "vitrin": "aspect-[3/4] relative rounded-2xl overflow-hidden shadow-2xl hover:shadow-[0_10px_40px_rgba(0,0,0,0.5)] transition-all duration-500"
+    },
+    "inputs": {
+      "default": "bg-white/5 border-white/10 focus:border-[#D4AF37] text-white placeholder:text-white/40 rounded-lg h-12"
+    },
+    "navigation": {
+      "mobile_bar": "fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-white/10 z-50 py-4 pb-6 px-6 flex justify-between items-center"
+    }
+  },
+  "layout_strategies": {
+    "hero_section": "Full screen height (min-h-[80vh]) with cinematic video/image background. Center aligned text with 'Glass' search container.",
+    "grid_system": "Use 'Bento' grid for features. Vitrin items should use a horizontal scroll on mobile and grid on desktop.",
+    "profile_detail": "Split layout: Left/Top is sticky gallery. Right/Bottom is scrollable details + chat action."
+  },
+  "image_assets": {
+    "hero_backgrounds": [
+      {
+        "url": "https://images.unsplash.com/photo-1599000428011-b1dc293639d5?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "alt": "Kyrenia Harbour Night Luxury",
+        "usage": "Hero Section Background, Landing Page"
+      },
+      {
+        "url": "https://images.pexels.com/photos/7748801/pexels-photo-7748801.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "alt": "Elegant Event at Bellapais",
+        "usage": "Events Section Background"
+      }
+    ],
+    "social_vibe": [
+      {
+        "url": "https://images.unsplash.com/photo-1762100715669-1e3ed377ade3?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "alt": "Couple Conversation Dinner",
+        "usage": "About Us, Philosophy Section"
+      },
+      {
+        "url": "https://images.pexels.com/photos/7181363/pexels-photo-7181363.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "alt": "Romantic Dinner",
+        "usage": "Date Night Category"
+      }
+    ],
+    "partner_profiles": [
+      {
+        "url": "https://images.unsplash.com/photo-1590659163722-88a80a7ff913?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "alt": "Elegant Woman Portrait",
+        "usage": "Female Profile Mockup 1"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1729250828389-7e691b8d7ac6?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "alt": "Woman in Green Dress",
+        "usage": "Female Profile Mockup 2"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1660119602205-3aa5be623a3f?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "alt": "Man in Green Jacket",
+        "usage": "Male Profile Mockup 1"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1481608726045-7407244fb7b6?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "alt": "Man with Watch",
+        "usage": "Male Profile Mockup 2"
+      }
+    ]
+  },
+  "visual_enhancers": {
+    "glassmorphism": "backdrop-filter: blur(12px); background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);",
+    "golden_glow": "box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);",
+    "noise_texture": "Use a subtle noise overlay SVG on the main background to reduce digital flatness."
+  },
+  "instructions_to_main_agent": [
+    "Install 'lucide-react' for icons. Use thin, elegant strokes.",
+    "For the Vitrin (Showcase), implement a horizontal scroll snap on mobile.",
+    "The messaging interface should look like WhatsApp/Telegram but with the Golden/Dark theme.",
+    "Do not use gradients on text unless it's a very large headline.",
+    "Ensure all images have a lazy loading strategy.",
+    "Use 'Framer Motion' for simple entrance animations (fade up, slide in).",
+    "The 'Become a Partner' button should always be visible but secondary to 'Browse Partners'."
+  ],
+  "UNIVERSAL_GUIDELINES": [
+    "Avoid generic 'AI slop' aesthetics. Be bold with spacing and typography.",
+    "Dark mode is the default and only mode for this MVP.",
+    "Use z-index carefully to layer glass elements over images.",
+    "Micro-interactions on every button press (scale down slightly).",
+    "Data-testid attributes are mandatory for all interactive elements."
+  ]
+}
