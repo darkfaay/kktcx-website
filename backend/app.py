@@ -56,6 +56,10 @@ async def health():
 
 # Get cities
 @app.get("/api/catalog/cities")
+async def get_catalog_cities(lang: str = "tr"):
+    cities = await db.cities.find({}, {"_id": 0}).to_list(100)
+    return cities
+
 @app.get("/api/cities")
 async def get_cities(lang: str = "tr"):
     cities = await db.cities.find({}, {"_id": 0}).to_list(100)
@@ -63,6 +67,10 @@ async def get_cities(lang: str = "tr"):
 
 # Get categories  
 @app.get("/api/catalog/categories")
+async def get_catalog_categories(lang: str = "tr"):
+    categories = await db.categories.find({}, {"_id": 0}).to_list(100)
+    return categories
+
 @app.get("/api/categories")
 async def get_categories(lang: str = "tr"):
     categories = await db.categories.find({}, {"_id": 0}).to_list(100)
@@ -104,13 +112,30 @@ async def get_seo_settings(page: str = "home", lang: str = "tr"):
 
 # Get partners
 @app.get("/api/partners")
-async def get_partners(limit: int = 20, skip: int = 0):
+async def get_partners(
+    lang: str = "tr",
+    page: int = 1, 
+    limit: int = 20,
+    city: str = None,
+    category: str = None,
+    gender: str = None,
+    sort_by: str = "recommended"
+):
+    query = {"status": "approved"}
+    if city:
+        query["city_id"] = city
+    if category:
+        query["category_id"] = category
+    if gender:
+        query["gender"] = gender
+    
+    skip = (page - 1) * limit
     profiles = await db.partner_profiles.find(
-        {"status": "approved"},
+        query,
         {"_id": 0}
     ).sort("priority_score", -1).skip(skip).limit(limit).to_list(limit)
-    total = await db.partner_profiles.count_documents({"status": "approved"})
-    return {"profiles": profiles, "total": total}
+    total = await db.partner_profiles.count_documents(query)
+    return {"profiles": profiles or [], "total": total}
 
 # Seed database
 @app.post("/api/seed-database")
