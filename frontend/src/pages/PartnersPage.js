@@ -247,11 +247,11 @@ const PartnersPage = () => {
         axios.get(`${API_URL}/api/cities?lang=${lang}`),
         axios.get(`${API_URL}/api/categories?lang=${lang}`)
       ]);
-      setCities(citiesRes.data);
-      setCategories(categoriesRes.data);
+      setCities(citiesRes.data || []);
+      setCategories(categoriesRes.data || []);
 
       // If citySlug is provided, find the city and set filter
-      if (citySlug) {
+      if (citySlug && citiesRes.data) {
         const city = citiesRes.data.find(c => c.slug === citySlug);
         if (city) {
           setFilters(prev => ({ ...prev, city_id: city.id }));
@@ -259,6 +259,8 @@ const PartnersPage = () => {
       }
     } catch (error) {
       console.error('Failed to fetch filters data:', error);
+      setCities([]);
+      setCategories([]);
     }
   };
 
@@ -285,10 +287,12 @@ const PartnersPage = () => {
       if (filters.outcall) params.append('outcall', 'true');
 
       const response = await axios.get(`${API_URL}/api/partners?${params.toString()}`);
-      setProfiles(response.data.profiles);
-      setTotal(response.data.total);
+      setProfiles(response.data?.profiles || []);
+      setTotal(response.data?.total || 0);
     } catch (error) {
       console.error('Failed to fetch profiles:', error);
+      setProfiles([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
