@@ -94,10 +94,23 @@ const PartnerDetailPage = () => {
   const [isFavorited, setIsFavorited] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  
+  // Reviews state
+  const [reviews, setReviews] = useState([]);
+  const [reviewStats, setReviewStats] = useState({ average_rating: 0, review_count: 0 });
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [newReview, setNewReview] = useState({ rating: 5, comment: '', is_anonymous: false });
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   useEffect(() => {
     fetchProfile();
   }, [slug, lang]);
+  
+  useEffect(() => {
+    if (profile?.id) {
+      fetchReviews();
+    }
+  }, [profile?.id]);
 
   const fetchProfile = async () => {
     try {
@@ -112,6 +125,41 @@ const PartnerDetailPage = () => {
       navigate(`/${lang}/partnerler`);
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const fetchReviews = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/partners/${profile.id}/reviews?limit=10`);
+      setReviews(response.data.reviews || []);
+      setReviewStats(response.data.stats || { average_rating: 0, review_count: 0 });
+    } catch (error) {
+      console.error('Failed to fetch reviews:', error);
+    }
+  };
+  
+  const submitReview = async () => {
+    if (!user) {
+      navigate(`/${lang}/giris`);
+      return;
+    }
+    
+    setSubmittingReview(true);
+    try {
+      await api.post('/reviews', {
+        partner_id: profile.id,
+        rating: newReview.rating,
+        comment: newReview.comment,
+        is_anonymous: newReview.is_anonymous
+      });
+      toast.success('Değerlendirmeniz gönderildi. Onaylandıktan sonra yayınlanacak.');
+      setShowReviewForm(false);
+      setNewReview({ rating: 5, comment: '', is_anonymous: false });
+    } catch (error) {
+      const message = error.response?.data?.detail || 'Bir hata oluştu';
+      toast.error(message);
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -564,6 +612,138 @@ const PartnerDetailPage = () => {
                 </div>
               </div>
             )}
+            
+            {/* Reviews Section */}
+            <div className="glass rounded-xl p-6" data-testid="reviews-section">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-white font-semibold flex items-center gap-2">
+                  <Star className="w-5 h-5 text-yellow-400" />
+                  Değerlendirmeler
+                </h3>
+                {reviewStats.review_count > 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={`w-4 h-4 ${star <= Math.round(reviewStats.average_rating) ? 'text-yellow-400 fill-yellow-400' : 'text-white/20'}`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-white font-bold">{reviewStats.average_rating}</span>
+                    <span className="text-white/50 text-sm">({reviewStats.review_count} değerlendirme)</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Add Review Button */}
+              {user && !showReviewForm && (
+                <Button
+                  variant="outline"
+                  className="w-full mb-4 border-[#D4AF37]/30 text-[#D4AF37] hover:bg-[#D4AF37]/10"
+                  onClick={() => setShowReviewForm(true)}
+                  data-testid="add-review-btn"
+                >
+                  <Star className="w-4 h-4 mr-2" />
+                  Değerlendirme Yap
+                </Button>
+              )}
+              
+              {/* Review Form */}
+              {showReviewForm && (
+                <div className="bg-white/5 rounded-xl p-4 mb-4 space-y-4">
+                  <h4 className="text-white font-medium">Değerlendirmeniz</h4>
+                  
+                  {/* Star Rating */}
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setNewReview(prev => ({ ...prev, rating: star }))}
+                        className="p-1 hover:scale-110 transition-transform"
+                      >
+                        <Star
+                          className={`w-8 h-8 ${star <= newReview.rating ? 'text-yellow-400 fill-yellow-400' : 'text-white/20 hover:text-white/40'}`}
+                        />
+                      </button>
+                    ))}
+                    <span className="ml-2 text-white/60 text-sm">{newReview.rating} / 5</span>
+                  </div>
+                  
+                  {/* Comment */}
+                  <textarea
+                    value={newReview.comment}
+                    onChange={(e) => setNewReview(prev => ({ ...prev, comment: e.target.value }))}
+                    placeholder="Deneyiminizi paylaşın (isteğe bağlı)..."
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-[#D4AF37]/50 resize-none"
+                    rows={3}
+                  />
+                  
+                  {/* Anonymous checkbox */}
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newReview.is_anonymous}
+                      onChange={(e) => setNewReview(prev => ({ ...prev, is_anonymous: e.target.checked }))}
+                      className="w-4 h-4 rounded bg-white/10 border-white/20 text-[#D4AF37] focus:ring-[#D4AF37]/50"
+                    />
+                    <span className="text-white/60 text-sm">Anonim olarak gönder</span>
+                  </label>
+                  
+                  {/* Submit buttons */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1 border-white/10"
+                      onClick={() => setShowReviewForm(false)}
+                    >
+                      İptal
+                    </Button>
+                    <Button
+                      className="flex-1 bg-[#D4AF37] hover:bg-[#D4AF37]/80 text-black"
+                      onClick={submitReview}
+                      disabled={submittingReview}
+                    >
+                      {submittingReview ? 'Gönderiliyor...' : 'Gönder'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Reviews List */}
+              {reviews.length > 0 ? (
+                <div className="space-y-4">
+                  {reviews.map((review) => (
+                    <div key={review.id} className="border-b border-white/5 pb-4 last:border-0 last:pb-0">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <p className="text-white font-medium">{review.user_name}</p>
+                          <div className="flex items-center gap-1 mt-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`w-3 h-3 ${star <= review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-white/20'}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <span className="text-white/40 text-xs">
+                          {new Date(review.created_at).toLocaleDateString('tr-TR')}
+                        </span>
+                      </div>
+                      {review.comment && (
+                        <p className="text-white/70 text-sm">{review.comment}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-white/40 text-center py-4">
+                  Henüz değerlendirme yapılmamış. İlk değerlendiren siz olun!
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Right Column - Sidebar */}

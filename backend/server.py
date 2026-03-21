@@ -22,7 +22,8 @@ from routers import (
     messages_router,
     websocket_endpoint,
     appointments_router,
-    admin_router
+    admin_router,
+    reviews_router
 )
 
 # Services
@@ -66,6 +67,7 @@ app.include_router(catalog_router, prefix="/api")
 app.include_router(messages_router, prefix="/api")
 app.include_router(appointments_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
+app.include_router(reviews_router, prefix="/api")
 
 
 # ==================== ROOT ENDPOINTS ====================

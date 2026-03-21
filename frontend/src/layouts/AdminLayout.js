@@ -7,7 +7,7 @@ import {
   Settings, LogOut, Menu, X, ChevronLeft, ChevronRight,
   Bell, Search, Globe, FileText, Image, 
   MousePointer, MessageSquare,
-  Calendar, TrendingUp, CreditCard
+  Calendar, TrendingUp, CreditCard, Star
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -41,6 +41,7 @@ const AdminLayout = () => {
       items: [
         { path: '/partnerler', icon: UserCheck, label: 'Partner & İlanlar', badge: 'pending' },
         { path: '/randevular', icon: Calendar, label: 'Randevular', badge: null },
+        { path: '/degerlendirmeler', icon: Star, label: 'Değerlendirmeler', badge: null },
       ]
     },
     {

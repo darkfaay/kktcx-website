@@ -7,6 +7,7 @@ from routers.catalog import router as catalog_router
 from routers.messages import router as messages_router, websocket_endpoint
 from routers.appointments import router as appointments_router
 from routers.admin import router as admin_router
+from routers.reviews import router as reviews_router
 
 __all__ = [
     'auth_router',
@@ -15,5 +16,6 @@ __all__ = [
     'messages_router',
     'websocket_endpoint',
     'appointments_router',
-    'admin_router'
+    'admin_router',
+    'reviews_router'
 ]

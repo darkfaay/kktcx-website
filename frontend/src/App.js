@@ -51,6 +51,7 @@ import AdminSMS from './pages/admin/AdminSMS';
 import AdminPartners from './pages/admin/AdminPartners';
 import AdminAppointments from './pages/admin/AdminAppointments';
 import AdminReports from './pages/admin/AdminReports';
+import AdminReviews from './pages/admin/AdminReviews';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, roles = [] }) => {
@@ -153,6 +154,7 @@ function AppRoutes() {
             <Route path="kullanicilar" element={<AdminUsers />} />
             <Route path="partnerler" element={<AdminPartners />} />
             <Route path="randevular" element={<AdminAppointments />} />
+            <Route path="degerlendirmeler" element={<AdminReviews />} />
             <Route path="sehirler" element={<AdminCities />} />
             <Route path="kategoriler" element={<AdminCategories />} />
             <Route path="paketler" element={<AdminPackages />} />
