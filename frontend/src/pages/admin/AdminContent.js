@@ -170,8 +170,19 @@ const AdminContent = () => {
   const fetchContent = async () => {
     try {
       const response = await api.get('/admin/content');
-      if (response.data) {
-        setContent(prev => ({ ...prev, ...response.data }));
+      if (response.data && Object.keys(response.data).length > 0) {
+        // Merge fetched content with default content
+        setContent(prev => {
+          const merged = { ...prev };
+          for (const page of Object.keys(response.data)) {
+            if (merged[page]) {
+              merged[page] = { ...merged[page], ...response.data[page] };
+            } else {
+              merged[page] = response.data[page];
+            }
+          }
+          return merged;
+        });
       }
     } catch (error) {
       console.error('Failed to fetch content:', error);

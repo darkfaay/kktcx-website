@@ -105,8 +105,10 @@ const AdminSEO = () => {
       const response = await api.get('/admin/seo');
       if (response.data) {
         setSeoSettings(prev => ({
-          ...prev,
-          ...response.data
+          global: response.data.global || prev.global,
+          pages: response.data.pages && response.data.pages.length > 0 ? response.data.pages : prev.pages,
+          robots: response.data.robots || prev.robots,
+          structured_data: response.data.structured_data || prev.structured_data,
         }));
       }
     } catch (error) {

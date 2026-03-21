@@ -90,9 +90,13 @@ const AdminSiteSettings = () => {
     try {
       const response = await api.get('/admin/settings');
       if (response.data) {
+        // Backend returns {key: value} format, map to our state structure
         setSettings(prev => ({
-          ...prev,
-          ...response.data
+          general: response.data.general || prev.general,
+          branding: response.data.branding || prev.branding,
+          social: response.data.social || prev.social,
+          features: response.data.features || prev.features,
+          homepage: response.data.homepage || prev.homepage,
         }));
       }
     } catch (error) {

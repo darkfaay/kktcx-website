@@ -69,6 +69,26 @@ const eyeColorOptions = [
   { value: 'other', label: 'Diğer' },
 ];
 
+const ethnicityOptions = [
+  { value: 'caucasian', label: 'Beyaz / Kafkas' },
+  { value: 'african', label: 'Afrikalı / Siyahi' },
+  { value: 'asian', label: 'Asyalı' },
+  { value: 'latin', label: 'Latin' },
+  { value: 'middle-eastern', label: 'Orta Doğulu' },
+  { value: 'mixed', label: 'Karışık' },
+  { value: 'other', label: 'Diğer' },
+];
+
+const skinToneOptions = [
+  { value: 'fair', label: 'Açık Ten' },
+  { value: 'light', label: 'Beyaz' },
+  { value: 'medium', label: 'Buğday' },
+  { value: 'olive', label: 'Esmer' },
+  { value: 'tan', label: 'Bronz' },
+  { value: 'brown', label: 'Kahverengi' },
+  { value: 'dark', label: 'Koyu' },
+];
+
 const PartnerProfileEdit = () => {
   const { user, api } = useAuth();
   const { lang, t } = useLanguage();
@@ -95,6 +115,8 @@ const PartnerProfileEdit = () => {
     height: '',
     hair_color: '',
     eye_color: '',
+    ethnicity: '',
+    skin_tone: '',
     short_description: '',
     detailed_description: '',
     hourly_rate: '',
@@ -153,6 +175,8 @@ const PartnerProfileEdit = () => {
           height: profileRes.data.height || '',
           hair_color: profileRes.data.hair_color || '',
           eye_color: profileRes.data.eye_color || '',
+          ethnicity: profileRes.data.ethnicity || '',
+          skin_tone: profileRes.data.skin_tone || '',
           short_description: profileRes.data.short_description || '',
           detailed_description: profileRes.data.detailed_description || '',
           hourly_rate: profileRes.data.hourly_rate || '',
@@ -450,6 +474,39 @@ const PartnerProfileEdit = () => {
                 <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
                   <SelectItem value="none">Seçin</SelectItem>
                   {eyeColorOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Second Row - Ethnicity & Skin Tone */}
+          <div className="grid md:grid-cols-2 gap-6 mt-6">
+            <div>
+              <label className="text-white/70 text-sm mb-2 block">Etnik Köken</label>
+              <Select value={formData.ethnicity || "none"} onValueChange={(v) => handleChange('ethnicity', v === "none" ? "" : v)}>
+                <SelectTrigger className="input-glass" data-testid="profile-ethnicity">
+                  <SelectValue placeholder="Seçin" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
+                  <SelectItem value="none">Seçin</SelectItem>
+                  {ethnicityOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-white/70 text-sm mb-2 block">Ten Rengi</label>
+              <Select value={formData.skin_tone || "none"} onValueChange={(v) => handleChange('skin_tone', v === "none" ? "" : v)}>
+                <SelectTrigger className="input-glass" data-testid="profile-skin-tone">
+                  <SelectValue placeholder="Seçin" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
+                  <SelectItem value="none">Seçin</SelectItem>
+                  {skinToneOptions.map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                   ))}
                 </SelectContent>

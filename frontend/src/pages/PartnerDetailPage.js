@@ -46,7 +46,28 @@ const bodyTypeLabels = {
   athletic: 'Atletik',
   average: 'Normal',
   curvy: 'Dolgun',
-  muscular: 'Kaslı'
+  muscular: 'Kaslı',
+  'plus-size': 'Büyük Beden'
+};
+
+const ethnicityLabels = {
+  caucasian: 'Beyaz / Kafkas',
+  african: 'Afrikalı',
+  asian: 'Asyalı',
+  latin: 'Latin',
+  'middle-eastern': 'Orta Doğulu',
+  mixed: 'Karışık',
+  other: 'Diğer'
+};
+
+const skinToneLabels = {
+  fair: 'Açık Ten',
+  light: 'Beyaz',
+  medium: 'Buğday',
+  olive: 'Esmer',
+  tan: 'Bronz',
+  brown: 'Kahverengi',
+  dark: 'Koyu'
 };
 
 const PartnerDetailPage = () => {
@@ -315,7 +336,7 @@ const PartnerDetailPage = () => {
           {/* Left Column - Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Quick Info Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
               {profile.gender && (
                 <div className="glass rounded-xl p-4 text-center">
                   <User className="w-5 h-5 text-[#E91E63] mx-auto mb-2" />
@@ -328,6 +349,20 @@ const PartnerDetailPage = () => {
                   <Heart className="w-5 h-5 text-[#E91E63] mx-auto mb-2" />
                   <p className="text-white/50 text-xs">Yönelim</p>
                   <p className="text-white font-medium">{orientationLabels[profile.orientation] || profile.orientation}</p>
+                </div>
+              )}
+              {profile.ethnicity && (
+                <div className="glass rounded-xl p-4 text-center">
+                  <Globe className="w-5 h-5 text-[#E91E63] mx-auto mb-2" />
+                  <p className="text-white/50 text-xs">Etnik Köken</p>
+                  <p className="text-white font-medium">{ethnicityLabels[profile.ethnicity] || profile.ethnicity}</p>
+                </div>
+              )}
+              {profile.skin_tone && (
+                <div className="glass rounded-xl p-4 text-center">
+                  <Palette className="w-5 h-5 text-[#E91E63] mx-auto mb-2" />
+                  <p className="text-white/50 text-xs">Ten Rengi</p>
+                  <p className="text-white font-medium">{skinToneLabels[profile.skin_tone] || profile.skin_tone}</p>
                 </div>
               )}
               {profile.height && (

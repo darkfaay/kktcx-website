@@ -133,6 +133,8 @@ class PartnerProfileCreate(BaseModel):
     height: Optional[int] = None
     hair_color: Optional[str] = None
     eye_color: Optional[str] = None
+    ethnicity: Optional[str] = None  # caucasian, african, asian, latin, middle-eastern, mixed, other
+    skin_tone: Optional[str] = None  # fair, light, medium, olive, tan, brown, dark
     short_description: str
     detailed_description: str
     availability: Dict[str, Any] = {}
@@ -158,6 +160,8 @@ class PartnerProfileUpdate(BaseModel):
     height: Optional[int] = None
     hair_color: Optional[str] = None
     eye_color: Optional[str] = None
+    ethnicity: Optional[str] = None
+    skin_tone: Optional[str] = None
     short_description: Optional[str] = None
     detailed_description: Optional[str] = None
     availability: Optional[Dict[str, Any]] = None
@@ -512,6 +516,8 @@ async def create_partner_profile(data: PartnerProfileCreate, user: dict = Depend
         "height": data.height,
         "hair_color": data.hair_color,
         "eye_color": data.eye_color,
+        "ethnicity": data.ethnicity,
+        "skin_tone": data.skin_tone,
         "short_description": data.short_description,
         "detailed_description": data.detailed_description,
         "availability": data.availability,
@@ -1415,20 +1421,24 @@ async def admin_get_seo(admin: dict = Depends(require_admin)):
     global_seo = await db.settings.find_one({"key": "seo_global"}, {"_id": 0})
     pages_seo = await db.seo_pages.find({}, {"_id": 0}).to_list(100)
     robots_seo = await db.settings.find_one({"key": "seo_robots"}, {"_id": 0})
+    structured_data = await db.settings.find_one({"key": "seo_structured_data"}, {"_id": 0})
     
     return {
         "global": global_seo.get("value", {}) if global_seo else {},
         "pages": pages_seo or [],
-        "robots": robots_seo.get("value", {}) if robots_seo else {}
+        "robots": robots_seo.get("value", {}) if robots_seo else {},
+        "structured_data": structured_data.get("value", {}) if structured_data else {}
     }
 
 @api_router.put("/admin/seo/{section}")
 async def admin_update_seo(
     section: str,
-    data: Dict[str, Any],
+    request: Request,
     admin: dict = Depends(require_admin)
 ):
-    """Update SEO settings by section (global, pages, robots)"""
+    """Update SEO settings by section (global, pages, robots, structured_data)"""
+    data = await request.json()
+    
     if section == "global":
         await db.settings.update_one(
             {"key": "seo_global"},
@@ -1436,8 +1446,9 @@ async def admin_update_seo(
             upsert=True
         )
     elif section == "pages":
-        # Update each page's SEO
-        for page in data:
+        # Update each page's SEO - data can be a list of pages
+        pages_list = data if isinstance(data, list) else [data]
+        for page in pages_list:
             await db.seo_pages.update_one(
                 {"slug": page.get("slug")},
                 {"$set": {**page, "updated_at": datetime.now(timezone.utc).isoformat()}},
@@ -1447,6 +1458,12 @@ async def admin_update_seo(
         await db.settings.update_one(
             {"key": "seo_robots"},
             {"$set": {"key": "seo_robots", "value": data, "updated_at": datetime.now(timezone.utc).isoformat()}},
+            upsert=True
+        )
+    elif section == "structured_data":
+        await db.settings.update_one(
+            {"key": "seo_structured_data"},
+            {"$set": {"key": "seo_structured_data", "value": data, "updated_at": datetime.now(timezone.utc).isoformat()}},
             upsert=True
         )
     return {"success": True}
