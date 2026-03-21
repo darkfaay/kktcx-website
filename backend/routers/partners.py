@@ -29,6 +29,12 @@ async def get_partners(
     vitrin_only: bool = False,
     homepage_vitrin: bool = False,
     city_vitrin: bool = False,
+    available_today: bool = False,
+    available_tonight: bool = False,
+    featured_only: bool = False,
+    verified_only: bool = False,
+    incall: bool = False,
+    outcall: bool = False,
     search: Optional[str] = None,
     sort_by: str = "priority",
     page: int = 1,
@@ -37,11 +43,15 @@ async def get_partners(
 ):
     """Get partner profiles with filters"""
     query = {"status": "approved"}
+    and_conditions = []
     
     if city:
         city_doc = await db.cities.find_one({"$or": [{"id": city}, {"slug": city}]})
         if city_doc:
-            query["city_id"] = city_doc.get("id", city)
+            # Match profiles by either the city UUID or slug (some profiles use old format)
+            city_uuid = city_doc.get("id")
+            city_slug = city_doc.get("slug")
+            and_conditions.append({"$or": [{"city_id": city_uuid}, {"city_id": city_slug}]})
     
     if category:
         query["category_ids"] = {"$in": [category]}
@@ -58,6 +68,27 @@ async def get_partners(
     
     query["age"] = {"$gte": min_age, "$lte": max_age}
     
+    # Availability filters
+    if available_today:
+        query["is_available_today"] = True
+    
+    if available_tonight:
+        query["is_available_tonight"] = True
+    
+    # Featured and verified filters
+    if featured_only:
+        query["is_featured"] = True
+    
+    if verified_only:
+        query["is_verified"] = True
+    
+    # Incall/Outcall filters
+    if incall:
+        query["incall"] = True
+    
+    if outcall:
+        query["outcall"] = True
+    
     if homepage_vitrin:
         query["is_homepage_vitrin"] = True
     elif city_vitrin:
@@ -66,10 +97,16 @@ async def get_partners(
         query["is_vitrin"] = True
     
     if search:
-        query["$or"] = [
-            {"nickname": {"$regex": search, "$options": "i"}},
-            {"short_description": {"$regex": search, "$options": "i"}}
-        ]
+        and_conditions.append({
+            "$or": [
+                {"nickname": {"$regex": search, "$options": "i"}},
+                {"short_description": {"$regex": search, "$options": "i"}}
+            ]
+        })
+    
+    # Combine all $and conditions
+    if and_conditions:
+        query["$and"] = and_conditions
     
     # Sorting
     sort_options = {

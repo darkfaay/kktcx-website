@@ -501,6 +501,19 @@ KKTCX.com, Kuzey ve Güney Kıbrıs'a özel, sosyal eşlik hizmetleri platformud
 - ✅ Partner listesinde hizmet türüne göre filtreleme çalışıyor
 - ✅ URL parametresi: `?service=dinner-companion`, `?service=gf-bf-experience` vb.
 
+### ✅ Tüm Partnerler Sayfası Filtreleri Düzeltildi (Tamamlandı - 21 Mart 2026)
+Backend'e eksik filtre parametreleri eklendi ve frontend-backend parametre uyumu sağlandı:
+- ✅ **Şehir filtresi:** `city=girne` - Hem UUID hem slug formatıyla eşleşme
+- ✅ **Hizmet Türü:** `service_type=dinner-companion`
+- ✅ **Yaş Aralığı:** `min_age=25&max_age=35`
+- ✅ **Bugün Müsait:** `available_today=true`
+- ✅ **Bu Akşam Müsait:** `available_tonight=true`
+- ✅ **Öne Çıkan:** `featured_only=true`
+- ✅ **Doğrulanmış:** `verified_only=true`
+- ✅ **Ev (Incall):** `incall=true`
+- ✅ **Dışarı (Outcall):** `outcall=true`
+- ✅ Çoklu filtre kombinasyonları çalışıyor
+
 ### P1 - Partner/Kullanıcı Panel Modernizasyonu
 - [ ] "Midnight Velvet" temasını uygula (design_guidelines.json)
 - [ ] Yeni font entegrasyonu (Playfair Display, Manrope)

@@ -205,8 +205,8 @@ const PartnersPage = () => {
     max_age: parseInt(searchParams.get('max_age')) || 60,
     available_today: searchParams.get('available_today') === 'true',
     available_tonight: searchParams.get('available_tonight') === 'true',
-    featured_only: searchParams.get('featured') === 'true',
-    verified_only: searchParams.get('verified') === 'true',
+    featured_only: searchParams.get('featured_only') === 'true',
+    verified_only: searchParams.get('verified_only') === 'true',
     incall: searchParams.get('incall') === 'true',
     outcall: searchParams.get('outcall') === 'true',
     sort_by: searchParams.get('sort') || 'recommended',
@@ -250,8 +250,8 @@ const PartnersPage = () => {
       params.append('limit', 20);
       params.append('sort_by', filters.sort_by);
 
-      if (filters.city_id) params.append('city_id', filters.city_id);
-      if (filters.category_id) params.append('category_id', filters.category_id);
+      if (filters.city_id) params.append('city', filters.city_id);
+      if (filters.category_id) params.append('category', filters.category_id);
       if (filters.gender) params.append('gender', filters.gender);
       if (filters.service_type) params.append('service_type', filters.service_type);
       if (filters.min_age > 18) params.append('min_age', filters.min_age);
