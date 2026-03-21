@@ -204,3 +204,25 @@ KKTCX.com, Kuzey ve Güney Kıbrıs'a özel, sosyal eşlik hizmetleri platformud
 - ✅ **Rumca Dil Rotası Düzeltmesi** - /el rotası App.js'e eklendi, artık 404 vermiyor
 - ✅ **Rumca Çeviriler Eklendi** - AppContext.js'e tam Yunanca çeviri seti eklendi
 - ✅ **Yaş Doğrulama Modalı Çoklu Dil Desteği** - TR, EN, RU, DE, EL dillerinde gösterim
+
+### P1 Özellikler (21 Mart 2026 - Session 2)
+- ✅ **Partner Profil Sayfası Yeniden Tasarımı**:
+  - Kapak fotoğrafı (cover photo) bölümü
+  - Profil avatarı ve isim/yaş bilgisi
+  - Quick info kartları (cinsiyet, yönelim, boy, vücut tipi)
+  - Müsaitlik badge'leri (bugün, bu akşam, incall, outcall)
+  - Sunulan hizmetler bölümü
+  - Sağ sidebar: Saatlik ücret, İletişim (Mesaj, WhatsApp, Telegram), Favoriler, İstatistikler
+  - Lightbox fotoğraf galerisi
+  - Mobil action bar
+- ✅ **Yeni Logo Tasarımı**:
+  - Gradient animasyonlu logo (KKT=pembe, CX=altın)
+  - 18+ badge
+  - Hover glow efekti
+- ✅ **Geliştirilmiş Footer**:
+  - 5 sütunlu layout
+  - Marka + Sosyal medya ikonları (Instagram, Twitter, Telegram)
+  - Kuzey Kıbrıs şehirleri (Girne, Lefkoşa, Gazimağusa, Güzelyurt, İskele)
+  - Güney Kıbrıs şehirleri (Limasol, Larnaka, Baf, Ayia Napa, Protaras)
+  - Platform ve Yasal linkler
+  - Copyright ve yetişkin içerik uyarısı
