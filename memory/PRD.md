@@ -345,3 +345,39 @@ KKTCX.com, Kuzey ve Güney Kıbrıs'a özel, sosyal eşlik hizmetleri platformud
   - `RegisterPage.js` sayfasına yönelim seçici eklendi (4 buton: Heteroseksüel, Lezbiyen, Gay, Biseksüel)
   - Çoklu yönelim seçimi destekleniyor
 - ✅ **Test Sonuçları**: 10/10 backend testi geçti (100%), frontend tamamen fonksiyonel
+
+### Bug Düzeltmeleri ve Yeni Özellikler (Tamamlandı - 21 Mart 2026)
+- ✅ **Filtre Düzeltmeleri**:
+  - Duplike filtreler kaldırıldı (Cinsel Yönelim, ekstra Kategori)
+  - Filtreler sadece: Cinsiyet, Hizmet Türü, Şehir, Kategori, Yaş
+  - Yaş slider düzgün çalışıyor (18-60 aralık)
+- ✅ **Çoklu Dil Filtre Çevirileri**:
+  - Tüm filtre etiketleri çevrildi (TR, EN, RU, DE, EL)
+  - Cinsiyet seçenekleri: Kadın/Female/Frau/Γυναίκα/Женщина vs.
+  - Hizmet türleri: Yemek Eşliği/Dinner Companion vs.
+- ✅ **Menü Güncellemeleri**:
+  - "Ana Sayfa" linki menüye eklendi
+  - Desktop ve mobil navigasyonda görünür
+- ✅ **Banner Entegrasyonları**:
+  - Hakkımızda sayfasına PageBanner eklendi
+  - İletişim sayfasına PageBanner eklendi
+- ✅ **Anasayfa İyileştirmesi**:
+  - "Tutkunun Adresi" tek satırda gösteriliyor
+- ✅ **50 Profil Oluşturuldu**:
+  - Dağılım: 35 kadın (70%), 5 erkek (10%), 10 trans (20%)
+  - Tüm şehirlere dağıtılmış (Lefkoşa, Girne, Gazimağusa, Güzelyurt, İskele, Lefke)
+  - Her profilde 3-6 galeri fotoğrafı
+  - Rastgele hizmet türleri, yönelimler ve fiziksel özellikler
+- ✅ **Sosyal Medya Paylaşım Butonları**:
+  - WhatsApp paylaşım butonu
+  - Facebook paylaşım butonu
+  - X (Twitter) paylaşım butonu
+  - Telegram paylaşım butonu
+  - Link kopyalama butonu
+- ✅ **Şikayet Butonu Düzeltmesi**:
+  - Giriş yapmamış kullanıcılar için uyarı mesajı
+  - Giriş sayfasına yönlendirme
+- ✅ **Mesaj Butonu Düzeltmesi**:
+  - Routing sorunu çözüldü
+  - Giriş yapmamış kullanıcılar için giriş sayfasına yönlendirme
+- ✅ **Test Sonuçları**: 14/14 backend testi geçti (100%), frontend tamamen fonksiyonel
