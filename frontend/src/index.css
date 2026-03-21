@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Manrope:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -11,25 +11,28 @@
   --card-foreground: 210 40% 98%;
   --popover: 0 0% 4%;
   --popover-foreground: 210 40% 98%;
-  --primary: 350 80% 55%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 280 60% 20%;
+  --primary: 43 76% 52%;
+  --primary-foreground: 0 0% 0%;
+  --secondary: 222 47% 17%;
   --secondary-foreground: 210 40% 98%;
-  --muted: 280 30% 15%;
+  --muted: 215 28% 17%;
   --muted-foreground: 215 20% 65%;
-  --accent: 350 70% 50%;
+  --accent: 160 84% 39%;
   --accent-foreground: 0 0% 100%;
   --destructive: 0 62% 30%;
   --destructive-foreground: 210 40% 98%;
-  --border: 280 30% 20%;
-  --input: 280 30% 20%;
-  --ring: 350 80% 55%;
+  --border: 0 0% 10%;
+  --input: 0 0% 10%;
+  --ring: 43 76% 52%;
   --radius: 0.75rem;
-  --rose: #E91E63;
-  --rose-light: #FF6090;
-  --rose-dark: #AD1457;
-  --purple: #9C27B0;
-  --purple-light: #CE93D8;
+  
+  /* Midnight Velvet Theme Colors */
+  --gold: #D4AF37;
+  --gold-light: #F3E5AB;
+  --gold-dark: #997B19;
+  --midnight: #050505;
+  --midnight-paper: #0F0F10;
+  --midnight-subtle: #18181B;
 }
 
 * {
@@ -39,11 +42,11 @@
 }
 
 body {
-  font-family: 'Outfit', sans-serif;
-  background-color: #0A0A0F;
+  font-family: 'Manrope', sans-serif;
+  background-color: #050505;
   background-image: 
-    radial-gradient(ellipse at 10% 20%, rgba(233, 30, 99, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 90% 80%, rgba(156, 39, 176, 0.08) 0%, transparent 50%);
+    radial-gradient(ellipse at 10% 20%, rgba(212, 175, 55, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 80%, rgba(212, 175, 55, 0.02) 0%, transparent 50%);
   color: #F8FAFC;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -51,8 +54,16 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Playfair Display', serif;
   font-weight: 600;
+}
+
+.font-serif {
+  font-family: 'Playfair Display', serif;
+}
+
+.font-accent {
+  font-family: 'Cormorant Garamond', serif;
 }
 
 @layer base {
@@ -71,28 +82,35 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0A0A0F;
+  background: #050505;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #E91E63 0%, #9C27B0 100%);
+  background: linear-gradient(180deg, #D4AF37 0%, #997B19 100%);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #FF6090 0%, #CE93D8 100%);
+  background: linear-gradient(180deg, #F3E5AB 0%, #D4AF37 100%);
 }
 
-/* Glass morphism utility */
+/* Glass morphism utility - Midnight Velvet */
 .glass {
-  background: rgba(15, 15, 25, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(233, 30, 99, 0.15);
+  background: rgba(15, 15, 16, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-gold {
+  background: rgba(15, 15, 16, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(212, 175, 55, 0.2);
 }
 
 .glass-dark {
-  background: rgba(10, 10, 15, 0.9);
+  background: rgba(5, 5, 5, 0.9);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(233, 30, 99, 0.1);
@@ -128,17 +146,17 @@ h1, h2, h3, h4, h5, h6 {
   background: linear-gradient(135deg, #E91E63 0%, #9C27B0 100%);
 }
 
-/* Button animations */
+/* Button animations - Midnight Velvet Theme */
 .btn-primary {
   @apply font-semibold rounded-full transition-all duration-300;
-  background: linear-gradient(135deg, #E91E63 0%, #AD1457 100%);
-  color: white;
-  box-shadow: 0 0 20px rgba(233, 30, 99, 0.4);
+  background: linear-gradient(135deg, #D4AF37 0%, #997B19 100%);
+  color: black;
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #FF6090 0%, #E91E63 100%);
-  box-shadow: 0 0 30px rgba(233, 30, 99, 0.6);
+  background: linear-gradient(135deg, #F3E5AB 0%, #D4AF37 100%);
+  box-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
   transform: translateY(-2px);
 }
 
@@ -147,19 +165,19 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-outline {
-  @apply border border-[#E91E63]/50 text-[#E91E63] rounded-full transition-all duration-300;
+  @apply border border-[#D4AF37]/50 text-[#D4AF37] rounded-full transition-all duration-300;
 }
 
 .btn-outline:hover {
-  @apply bg-[#E91E63]/10 border-[#E91E63];
-  box-shadow: 0 0 15px rgba(233, 30, 99, 0.3);
+  @apply bg-[#D4AF37]/10 border-[#D4AF37];
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
 }
 
-/* Card hover effects */
+/* Card hover effects - Midnight Velvet */
 .profile-card {
   @apply relative overflow-hidden rounded-2xl transition-all duration-500;
-  background: linear-gradient(145deg, rgba(20, 20, 30, 0.9) 0%, rgba(15, 15, 25, 0.95) 100%);
-  border: 1px solid rgba(233, 30, 99, 0.15);
+  background: linear-gradient(145deg, rgba(15, 15, 16, 0.9) 0%, rgba(10, 10, 10, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .profile-card:hover {
