@@ -319,12 +319,15 @@ async def seed_database(secret: str = ""):
     # Categories - Delete and recreate with all categories
     await db.categories.delete_many({})
     categories = [
-        {"id": str(uuid.uuid4()), "slug": "escort", "names": {"tr": "Eskort", "en": "Escort", "ru": "Эскорт", "de": "Escort", "el": "Συνοδός"}, "active": True},
         {"id": str(uuid.uuid4()), "slug": "massage", "names": {"tr": "Masaj", "en": "Massage", "ru": "Массаж", "de": "Massage", "el": "Μασάζ"}, "active": True},
         {"id": str(uuid.uuid4()), "slug": "companion", "names": {"tr": "Eşlik", "en": "Companion", "ru": "Компаньон", "de": "Begleitung", "el": "Σύντροφος"}, "active": True},
-        {"id": str(uuid.uuid4()), "slug": "gigolo", "names": {"tr": "Jigolo", "en": "Gigolo", "ru": "Жиголо", "de": "Gigolo", "el": "Ζιγκολό"}, "active": True},
-        {"id": str(uuid.uuid4()), "slug": "trans", "names": {"tr": "Trans", "en": "Trans", "ru": "Транс", "de": "Trans", "el": "Τρανς"}, "active": True},
         {"id": str(uuid.uuid4()), "slug": "vip", "names": {"tr": "VIP", "en": "VIP", "ru": "VIP", "de": "VIP", "el": "VIP"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "dinner-companion", "names": {"tr": "Yemek Eşliği", "en": "Dinner Companion", "ru": "Компаньон на ужин", "de": "Dinner-Begleitung", "el": "Συνοδός δείπνου"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "event-companion", "names": {"tr": "Davet Eşliği", "en": "Event Companion", "ru": "Компаньон на мероприятие", "de": "Event-Begleitung", "el": "Συνοδός εκδηλώσεων"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "travel-companion", "names": {"tr": "Gezi Eşliği", "en": "Travel Companion", "ru": "Попутчик", "de": "Reisebegleitung", "el": "Συνοδός ταξιδιού"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "gf-bf-experience", "names": {"tr": "Sevgili Deneyimi", "en": "GF/BF Experience", "ru": "Опыт парня/девушки", "de": "Freund/in-Erlebnis", "el": "Εμπειρία συντρόφου"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "couple-roleplay", "names": {"tr": "Karı Koca Rolü", "en": "Couple Roleplay", "ru": "Ролевая игра пары", "de": "Paar-Rollenspiel", "el": "Ρόλος ζευγαριού"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "sleep-companion", "names": {"tr": "Uyku Arkadaşlığı", "en": "Sleep Companion", "ru": "Компаньон для сна", "de": "Schlafbegleitung", "el": "Σύντροφος ύπνου"}, "active": True},
     ]
     await db.categories.insert_many(categories)
     results["categories"] = len(categories)
