@@ -420,6 +420,30 @@ KKTCX.com, Kuzey ve Güney Kıbrıs'a özel, sosyal eşlik hizmetleri platformud
   - Badge desteği
 - ✅ **Test Sonuçları**: 19/19 backend, %100 frontend (iteration 9)
 
+### Admin Panel Menü Yeniden Yapılandırma (Tamamlandı - 21 Mart 2026)
+- ✅ **Yeni Menü Yapısı** (6 kategori):
+  - **GENEL:** Dashboard, Raporlar
+  - **KULLANICILAR:** Tüm Kullanıcılar, Partnerler
+  - **İLANLAR:** Profiller / İlanlar, Randevular
+  - **İÇERİK:** Sayfa İçerikleri, Medya Yönetimi, Çeviriler
+  - **KATALOG:** Şehirler, Kategoriler, Paketler
+  - **AYARLAR:** Site Ayarları, SEO Yönetimi, SMS Ayarları, Entegrasyonlar
+- ✅ **Admin Randevu Yönetimi Sayfası** (`/admin/randevular`):
+  - Tüm randevuları listele (tarih, partner, kullanıcı, süre, ücret, durum)
+  - İstatistik kartları (Toplam, Bekleyen, Onaylı, Tamamlanan, İptal)
+  - Arama ve durum filtreleme
+  - Randevu onaylama/reddetme işlemleri
+  - Backend: `GET /api/admin/appointments`, `GET /api/admin/appointments/stats`, `PUT /api/admin/appointments/{id}/status`
+- ✅ **Admin Raporlar Sayfası** (`/admin/raporlar`):
+  - Ana istatistik kartları (Toplam Gelir, Sayfa Görüntüleme, Yeni Kullanıcılar, Randevular)
+  - Görüntüleme trendi grafiği
+  - Gelir trendi grafiği
+  - En çok görüntülenen profiller listesi
+  - Son aktiviteler listesi
+  - Dönem filtresi (Bu Hafta, Bu Ay, Bu Yıl)
+  - Backend: `GET /api/admin/reports?period=week`
+- ✅ **Test Sonuçları**: 16/16 backend, %100 frontend (iteration 10)
+
 ---
 
 ## Backlog / Bekleyen Görevler
@@ -429,8 +453,14 @@ KKTCX.com, Kuzey ve Güney Kıbrıs'a özel, sosyal eşlik hizmetleri platformud
 - [ ] Route grupları: auth, partners, admin, appointments, etc.
 - [ ] Kod organizasyonu iyileştirmesi
 
+### P1 - Partner/Kullanıcı Panel Modernizasyonu
+- [ ] "Midnight Velvet" temasını uygula (design_guidelines.json)
+- [ ] Yeni font entegrasyonu (Playfair Display, Manrope)
+- [ ] Dashboard kartları yeniden tasarla
+
 ### P2 - Gelecek Özellikler
 - [ ] PostgreSQL'e geçiş
 - [ ] react-i18next ile tam i18n desteği
-- [ ] Partner/Kullanıcı panel modernizasyonu (Midnight Velvet tema)
+- [ ] "Bir Partner, Birden Fazla İlan" modeli
 - [ ] Stripe ile randevu ödeme entegrasyonu
+
