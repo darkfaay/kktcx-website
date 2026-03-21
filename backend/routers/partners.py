@@ -251,7 +251,10 @@ async def create_partner_profile(data: PartnerProfileCreate, user: dict = Depend
     }
     
     await db.partner_profiles.insert_one(profile)
-    await db.users.update_one({"id": user["id"]}, {"$set": {"role": UserRole.PARTNER}})
+    
+    # Don't change role if user is already admin
+    if user.get("role") != UserRole.ADMIN:
+        await db.users.update_one({"id": user["id"]}, {"$set": {"role": UserRole.PARTNER}})
     
     return {"success": True, "profile": {k: v for k, v in profile.items() if k != "_id"}}
 
