@@ -1,8 +1,19 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, LanguageProvider, useAuth } from './context/AppContext';
 import { Toaster } from './components/ui/sonner';
 import AgeVerification from './components/AgeVerification';
+
+// Scroll to top on route change
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  
+  return null;
+};
 
 // Layouts
 import PublicLayout from './layouts/PublicLayout';
@@ -79,7 +90,9 @@ const ProtectedRoute = ({ children, roles = [] }) => {
 
 function AppRoutes() {
   return (
-    <Routes>
+    <>
+      <ScrollToTop />
+      <Routes>
       {/* Redirect root to Turkish */}
       <Route path="/" element={<Navigate to="/tr" replace />} />
       
@@ -173,6 +186,7 @@ function AppRoutes() {
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/tr" replace />} />
     </Routes>
+    </>
   );
 }
 

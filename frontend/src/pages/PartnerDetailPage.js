@@ -103,6 +103,8 @@ const PartnerDetailPage = () => {
   const [submittingReview, setSubmittingReview] = useState(false);
 
   useEffect(() => {
+    // Scroll to top when page loads
+    window.scrollTo(0, 0);
     fetchProfile();
   }, [slug, lang]);
   
