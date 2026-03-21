@@ -322,3 +322,26 @@ KKTCX.com, Kuzey ve Güney Kıbrıs'a özel, sosyal eşlik hizmetleri platformud
   - `skin_tone` (Ten rengi): fair, light, medium, olive, tan, brown, dark
   - Frontend form'ları ve backend modelleri güncellendi
 - ✅ **Test Sonuçları**: 30/30 backend testi geçti, frontend tamamen fonksiyonel
+
+### Dinamik Sayfa Banner'ları (Tamamlandı - 21 Mart 2026)
+- ✅ **PageBanner Komponenti**:
+  - Kullanıcının cinsel yönelimine göre farklı banner görselleri
+  - Misafirler ve giriş yapmamış kullanıcılar için varsayılan (heteroseksüel) banner
+  - Heteroseksüel, Lezbiyen, Gay, Biseksüel yönelimlere özel banner görselleri
+  - 3 görsel arasında otomatik geçiş (10 saniye interval)
+  - Gradient overlay'ler ve animasyonlu orb efektleri
+  - Dinamik başlıklar (her yönelim için farklı)
+  - Nokta göstergeli manuel geçiş
+- ✅ **Backend Değişiklikleri**:
+  - `UserCreate` modeline `orientations: List[str]` alanı eklendi
+  - `UserResponse` modeline `orientations` alanı eklendi
+  - `/api/auth/register` endpoint'i orientations array kabul ediyor
+  - `/api/auth/login` endpoint'i kullanıcı bilgisiyle orientations döndürüyor
+  - `/api/auth/me` endpoint'i orientations alanı döndürüyor
+  - `/api/auth/profile` endpoint'i orientations güncelleyebiliyor (Query() annotation ile)
+- ✅ **Frontend Değişiklikleri**:
+  - `PageBanner.js` komponenti oluşturuldu
+  - `PartnersPage.js` sayfasına banner entegre edildi
+  - `RegisterPage.js` sayfasına yönelim seçici eklendi (4 buton: Heteroseksüel, Lezbiyen, Gay, Biseksüel)
+  - Çoklu yönelim seçimi destekleniyor
+- ✅ **Test Sonuçları**: 10/10 backend testi geçti (100%), frontend tamamen fonksiyonel
