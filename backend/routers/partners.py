@@ -23,6 +23,7 @@ async def get_partners(
     category: Optional[str] = None,
     orientation: Optional[str] = None,
     gender: Optional[str] = None,
+    service_type: Optional[str] = None,
     min_age: int = 18,
     max_age: int = 99,
     vitrin_only: bool = False,
@@ -50,6 +51,10 @@ async def get_partners(
     
     if gender:
         query["gender"] = gender
+    
+    # Service type filter - search in service_types array
+    if service_type:
+        query["service_types"] = {"$in": [service_type]}
     
     query["age"] = {"$gte": min_age, "$lte": max_age}
     

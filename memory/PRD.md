@@ -495,6 +495,12 @@ KKTCX.com, Kuzey ve Güney Kıbrıs'a özel, sosyal eşlik hizmetleri platformud
 - ✅ Admin Site Ayarları sayfasından toggle yönetimi
 - ✅ Desteklenen özellikler: reviews_enabled, messaging_enabled, favorites_enabled, booking_enabled
 
+### ✅ Hizmet Türü Filtreleme Düzeltmesi (Tamamlandı - 21 Mart 2026)
+- ✅ Backend `/api/partners` endpoint'ine `service_type` parametresi eklendi
+- ✅ Ana sayfadaki "Eşlik Hizmetleri" kategorileri artık doğru filtreleme yapıyor
+- ✅ Partner listesinde hizmet türüne göre filtreleme çalışıyor
+- ✅ URL parametresi: `?service=dinner-companion`, `?service=gf-bf-experience` vb.
+
 ### P1 - Partner/Kullanıcı Panel Modernizasyonu
 - [ ] "Midnight Velvet" temasını uygula (design_guidelines.json)
 - [ ] Yeni font entegrasyonu (Playfair Display, Manrope)
