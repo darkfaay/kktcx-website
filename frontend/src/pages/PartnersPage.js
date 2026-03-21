@@ -380,7 +380,7 @@ const PartnersPage = () => {
           </SelectTrigger>
           <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
             <SelectItem value="all">{t('allCities')}</SelectItem>
-            {cities.map((city) => (
+            {(cities || []).map((city) => (
               <SelectItem key={city.id} value={city.id}>{city.name}</SelectItem>
             ))}
           </SelectContent>
@@ -559,7 +559,7 @@ const PartnersPage = () => {
           ) : (
             <>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 stagger-children">
-                {profiles.map((profile) => (
+                {(profiles || []).map((profile) => (
                   <PartnerCard key={profile.id} profile={profile} lang={lang} t={t} />
                 ))}
               </div>

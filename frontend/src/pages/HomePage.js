@@ -597,7 +597,7 @@ const HomePage = () => {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {homeData.homepage_vitrin.slice(0, siteSettings.homepage?.partners_per_section || 8).map((profile) => (
+              {(homeData?.homepage_vitrin || []).slice(0, siteSettings.homepage?.partners_per_section || 8).map((profile) => (
                 <PremiumShowcaseCard key={profile.id} profile={profile} lang={lang} />
               ))}
             </div>
@@ -628,7 +628,7 @@ const HomePage = () => {
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-              {homeData.vitrin_profiles.slice(0, siteSettings.homepage?.partners_per_section || 8).map((profile) => (
+              {(homeData?.vitrin_profiles || []).slice(0, siteSettings.homepage?.partners_per_section || 8).map((profile) => (
                 <PartnerCard key={profile.id} profile={profile} lang={lang} premium />
               ))}
             </div>
@@ -660,7 +660,7 @@ const HomePage = () => {
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-              {homeData.featured_profiles.slice(0, siteSettings.homepage?.partners_per_section || 8).map((profile) => (
+              {(homeData?.featured_profiles || []).slice(0, siteSettings.homepage?.partners_per_section || 8).map((profile) => (
                 <PartnerCard key={profile.id} profile={profile} lang={lang} />
               ))}
             </div>
@@ -691,7 +691,7 @@ const HomePage = () => {
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-              {homeData.new_profiles.slice(0, siteSettings.homepage?.partners_per_section || 8).map((profile) => (
+              {(homeData?.new_profiles || []).slice(0, siteSettings.homepage?.partners_per_section || 8).map((profile) => (
                 <PartnerCard key={profile.id} profile={profile} lang={lang} />
               ))}
             </div>
@@ -789,7 +789,7 @@ const HomePage = () => {
                 Kuzey Kıbrıs (KKTC)
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                {homeData.cities.filter(c => c.region === 'north').map((city) => (
+                {(homeData?.cities || []).filter(c => c.region === 'north').map((city) => (
                   <Link
                     key={city.id}
                     to={`/${lang}/partnerler?city=${city.slug}`}
@@ -811,7 +811,7 @@ const HomePage = () => {
                 Güney Kıbrıs (Rum Kesimi)
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {homeData.cities.filter(c => c.region === 'south').map((city) => (
+                {(homeData?.cities || []).filter(c => c.region === 'south').map((city) => (
                   <Link
                     key={city.id}
                     to={`/${lang}/partnerler?city=${city.slug}`}
