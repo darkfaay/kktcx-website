@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth, useLanguage } from '../../context/AppContext';
 import { 
   User, Ban, CheckCircle, Search, ChevronLeft, ChevronRight,
@@ -41,12 +42,13 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 const AdminPartners = () => {
   const { api } = useAuth();
   const { lang } = useLanguage();
+  const [searchParams, setSearchParams] = useSearchParams();
   
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [stats, setStats] = useState({
@@ -56,6 +58,14 @@ const AdminPartners = () => {
     vitrin: 0,
     verified: 0
   });
+
+  // Initialize status filter from URL params
+  useEffect(() => {
+    const urlStatus = searchParams.get('status');
+    if (urlStatus && urlStatus !== statusFilter) {
+      setStatusFilter(urlStatus);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchProfiles();

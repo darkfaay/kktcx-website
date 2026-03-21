@@ -165,7 +165,7 @@ const AdminDashboard = () => {
               <Clock className="w-5 h-5 text-yellow-400" />
               Onay Bekleyen Profiller
             </h3>
-            <Link to={`/${lang}/admin/profiller?status=pending`}>
+            <Link to={`/${lang}/admin/partnerler?status=pending`}>
               <Button variant="ghost" size="sm" className="text-[#E91E63] hover:bg-[#E91E63]/10">
                 Tümünü Gör
               </Button>
@@ -206,7 +206,7 @@ const AdminDashboard = () => {
           <div className="glass rounded-2xl p-6">
             <h3 className="text-white font-semibold mb-4">Hızlı İşlemler</h3>
             <div className="space-y-2">
-              <Link to={`/${lang}/admin/profiller?status=pending`} className="block">
+              <Link to={`/${lang}/admin/partnerler?status=pending`} className="block">
                 <Button variant="outline" className="w-full justify-start btn-outline">
                   <Clock className="w-4 h-4 mr-2 text-yellow-400" />
                   Profil Onayları ({stats?.pending_profiles || 0})
