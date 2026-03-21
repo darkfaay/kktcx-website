@@ -56,13 +56,15 @@ async def health():
 
 # Get cities
 @app.get("/api/catalog/cities")
-async def get_cities():
+@app.get("/api/cities")
+async def get_cities(lang: str = "tr"):
     cities = await db.cities.find({}, {"_id": 0}).to_list(100)
     return cities
 
 # Get categories  
 @app.get("/api/catalog/categories")
-async def get_categories():
+@app.get("/api/categories")
+async def get_categories(lang: str = "tr"):
     categories = await db.categories.find({}, {"_id": 0}).to_list(100)
     return categories
 
