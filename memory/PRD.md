@@ -98,6 +98,27 @@ KKTCX.com, Kuzey ve Güney Kıbrıs'a özel, sosyal eşlik hizmetleri platformud
 
 ---
 
+## Tamamlanan P0 Özellikler ✅ (21 Mart 2026 - Session 4)
+
+### P0: Fotoğraf Yükleme ve Yönetim Sistemi (TAMAMLANDI)
+- [x] Modern "Midnight Velvet" temalı fotoğraf galerisi UI
+- [x] Drag & Drop fotoğraf yükleme
+- [x] Dosya seçimi ile çoklu fotoğraf yükleme
+- [x] Fotoğraf istatistikleri (Toplam, Görünür, Bulanık, Kalan Slot)
+- [x] Profil fotoğrafı seçme (cover_image)
+- [x] Fotoğraf bulanıklaştırma (blur toggle)
+- [x] Fotoğraf silme
+- [x] Lightbox görüntüleme
+- [x] Hover aksiyonları (blur toggle, profil yap, sil)
+- [x] Backend API: `PUT /api/partner/images/{id}/blur`
+- [x] Backend API: `PUT /api/partner/images/{id}/cover`
+- [x] Backend API: `DELETE /api/partner/images/{id}`
+- [x] Backend API: `POST /api/partner/upload-image`
+- **Dosya**: `/app/frontend/src/pages/partner/PartnerPhotos.js`
+- **Test**: Backend %100, Frontend %90 (seeded data düzeltildi)
+
+---
+
 ## Devam Eden / Placeholder Özellikler 🚧
 
 ### P1: SMS Bildirimleri (Netgsm)
