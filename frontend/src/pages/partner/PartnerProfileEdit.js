@@ -18,11 +18,18 @@ import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
+// New legal service types
 const serviceTypeOptions = [
-  { value: 'escort', label: 'Eskort' },
-  { value: 'gigolo', label: 'Jigolo' },
-  { value: 'masseuse', label: 'Masöz' },
-  { value: 'companion', label: 'Eşlik' },
+  { value: 'dinner-companion', label: 'Yemek Eşliği' },
+  { value: 'event-companion', label: 'Davet Eşliği' },
+  { value: 'sleep-companion', label: 'Uyku Arkadaşlığı' },
+  { value: 'gf-bf-experience', label: 'Sevgili Deneyimi' },
+  { value: 'spouse-roleplay', label: 'Eş Rolleri' },
+  { value: 'travel-companion', label: 'Gezi Eşliği' },
+  { value: 'social-event', label: 'Sosyal Etkinlik' },
+  { value: 'business-event', label: 'İş Daveti' },
+  { value: 'culture-arts', label: 'Kültür & Sanat' },
+  { value: 'sports-fitness', label: 'Spor & Fitness' },
 ];
 
 const orientationOptions = [
@@ -102,6 +109,7 @@ const PartnerProfileEdit = () => {
   const languageOptions = [
     { value: 'Türkçe', label: 'Türkçe' },
     { value: 'İngilizce', label: 'İngilizce' },
+    { value: 'Rumca', label: 'Rumca (Yunanca)' },
     { value: 'Rusça', label: 'Rusça' },
     { value: 'Almanca', label: 'Almanca' },
     { value: 'Arapça', label: 'Arapça' },

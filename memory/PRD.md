@@ -1,7 +1,7 @@
 # KKTCX.com - Partner Listeleme Platformu PRD
 
 ## Proje Özeti
-KKTCX.com, Kuzey Kıbrıs'a özel, yetişkin partner listeleme ve profil platformudur. Platform, eskort, jigolo, masöz ve eşlik hizmetleri sunan partnerlerin profillerini listeler ve kullanıcıların bu profilleri filtreleyip mesajlaşmasını sağlar.
+KKTCX.com, Kuzey ve Güney Kıbrıs'a özel, sosyal eşlik hizmetleri platformudur. Platform, yemek eşliği, davet eşliği, sevgili deneyimi gibi yasal eşlik hizmetleri sunan partnerlerin profillerini listeler ve kullanıcıların bu profilleri filtreleyip mesajlaşmasını sağlar.
 
 ## Kullanıcı Rolleri
 - **Ziyaretçi**: Profilleri görüntüleyebilir
@@ -14,6 +14,13 @@ KKTCX.com, Kuzey Kıbrıs'a özel, yetişkin partner listeleme ve profil platfor
 - **Frontend**: React, Tailwind CSS, Shadcn UI
 - **Auth**: JWT
 - **Storage**: Emergent Object Storage
+
+## Desteklenen Diller
+- Türkçe (tr)
+- İngilizce (en)
+- Rusça (ru)
+- Almanca (de)
+- Rumca/Yunanca (el)
 
 ---
 
@@ -45,29 +52,49 @@ KKTCX.com, Kuzey Kıbrıs'a özel, yetişkin partner listeleme ve profil platfor
 - [x] Blur göstergesi (gizli ikonu)
 - [x] Partner photos sayfasında blur yönetimi
 
-### 5. Gelişmiş Filtreler (Tamamlandı - 20 Mart 2026)
-- [x] Cinsiyet filtresi (Kadın, Erkek, Trans)
-- [x] Hizmet türü filtresi (Eskort, Jigolo, Masöz, Eşlik)
-- [x] Cinsel yönelim filtresi (Heteroseksüel, Lezbiyen, Gay, Biseksüel, Trans)
-- [x] Şehir ve bölge filtresi
-- [x] Yaş aralığı filtresi
-- [x] Müsaitlik filtresi (Bugün/Bu Gece)
+### 5. Tüm Kıbrıs Şehirleri (Tamamlandı - 21 Mart 2026)
+- [x] **Kuzey Kıbrıs (10 şehir)**: Girne, Lefkoşa (Kuzey), Gazimağusa, Güzelyurt, İskele, Lefke, Dipkarpaz, Alsancak, Lapta, Çatalköy
+- [x] **Güney Kıbrıs (8 şehir)**: Lefkoşa (Güney), Limasol, Larnaka, Baf, Ayia Napa, Protaras, Paralimni, Polis
+- [x] Şehirler bölgeye göre gruplandı (Kuzey/Güney)
+- [x] Her şehir için 5 dil desteği (TR, EN, RU, DE, EL)
 
-### 6. Partner Profil Yönetimi (Tamamlandı)
+### 6. Yasal Hizmet Türleri (Tamamlandı - 21 Mart 2026)
+**Eski (kaldırıldı):** Eskort, Jigolo, Masöz
+**Yeni (eklendi):**
+- [x] Yemek Eşliği
+- [x] Davet Eşliği
+- [x] Uyku Arkadaşlığı
+- [x] Sevgili Deneyimi (GF/BF Experience)
+- [x] Eş Rolleri (Spouse Roleplay)
+- [x] Gezi Eşliği
+- [x] Sosyal Etkinlik
+- [x] İş Daveti
+- [x] Kültür & Sanat
+- [x] Spor & Fitness
+
+### 7. Cinsel Yönelim Filtreleri (Tamamlandı)
+- [x] Heteroseksüel
+- [x] Lezbiyen
+- [x] Gay
+- [x] Biseksüel
+- [x] Trans
+
+### 8. Dil Desteği (Tamamlandı - 21 Mart 2026)
+- [x] Rumca (Yunanca) eklendi
+- [x] Tüm şehir ve kategori isimlerine el (Greek) çevirileri
+- [x] Partner profilinde Rumca dil seçeneği
+
+### 9. Doğrulanmış Profil Rozeti (Tamamlandı)
+- [x] is_verified alanı mevcut
+- [x] Shield ikonu ile rozet gösterimi
+- [x] "Doğrulanmış" etiketi
+
+### 10. Partner Profil Yönetimi (Tamamlandı)
 - [x] Profil oluşturma wizard
-- [x] Hizmet türleri seçimi
+- [x] Hizmet türleri seçimi (yeni yasal türler)
 - [x] Cinsel yönelim seçimi
 - [x] Fiziksel özellikler (boy, vücut tipi, saç/göz rengi)
-- [x] Fiyat ve hizmet yeri (incall/outcall)
 - [x] WhatsApp ve Telegram iletişim bilgileri
-
-### 7. Admin Panel (Tamamlandı)
-- [x] Profil onaylama/reddetme
-- [x] Featured toggle
-- [x] Vitrin toggle
-- [x] Homepage vitrin toggle
-- [x] City vitrin toggle
-- [x] Paket fiyat düzenleme
 
 ---
 
@@ -101,8 +128,8 @@ KKTCX.com, Kuzey Kıbrıs'a özel, yetişkin partner listeleme ve profil platfor
 
 ### P2: Çoklu Dil Desteği (i18n)
 - [ ] react-i18next entegrasyonu
-- [ ] Türkçe, İngilizce, Rusça, Almanca çevirileri
-- [ ] URL tabanlı dil yönlendirmesi (/tr, /en, /ru, /de)
+- [ ] Türkçe, İngilizce, Rusça, Almanca, Rumca çevirileri
+- [ ] URL tabanlı dil yönlendirmesi (/tr, /en, /ru, /de, /el)
 
 ### P2: Backend Refaktör
 - [ ] server.py'ı modüllere böl
@@ -113,10 +140,6 @@ KKTCX.com, Kuzey Kıbrıs'a özel, yetişkin partner listeleme ve profil platfor
 - [ ] Meta tag'leri
 - [ ] Sitemap oluşturma
 - [ ] Schema.org markup
-
-### P3: PostgreSQL Migration (İsteğe Bağlı)
-- [ ] MongoDB'den PostgreSQL'e geçiş
-- [ ] Kullanıcının Hostinger planına göre değerlendirilecek
 
 ---
 
@@ -146,8 +169,8 @@ KKTCX.com, Kuzey Kıbrıs'a özel, yetişkin partner listeleme ve profil platfor
 
 ### Diğer
 - `GET /api/homepage` - Ana sayfa verileri
-- `GET /api/cities` - Şehirler
-- `GET /api/categories` - Kategoriler
+- `GET /api/cities` - Şehirler (18 şehir: 10 Kuzey + 8 Güney)
+- `GET /api/categories` - Kategoriler (10 hizmet türü)
 
 ---
 
@@ -157,7 +180,9 @@ KKTCX.com, Kuzey Kıbrıs'a özel, yetişkin partner listeleme ve profil platfor
 
 ---
 
-## Son Test Sonuçları (20 Mart 2026)
-- Backend: 100% (30/30 test geçti)
-- Frontend: 100% (tüm UI akışları çalışıyor)
-- Dosya: `/app/test_reports/iteration_1.json`
+## Son Güncellemeler (21 Mart 2026)
+- ✅ 18 Kıbrıs şehri eklendi (Kuzey + Güney)
+- ✅ Rumca dil desteği eklendi
+- ✅ Yasal hizmet türleri güncellendi (eskort/jigolo kaldırıldı)
+- ✅ 10 yeni eşlik hizmet kategorisi eklendi
+- ✅ Şehirler bölgelerine göre gruplandırıldı

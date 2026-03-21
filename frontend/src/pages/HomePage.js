@@ -17,11 +17,18 @@ import {
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
+// New legal service types
 const serviceTypeLabels = {
-  escort: 'Eskort',
-  gigolo: 'Jigolo',
-  masseuse: 'Masöz',
-  companion: 'Eşlik'
+  'dinner-companion': 'Yemek Eşliği',
+  'event-companion': 'Davet Eşliği',
+  'sleep-companion': 'Uyku Arkadaşlığı',
+  'gf-bf-experience': 'Sevgili Deneyimi',
+  'spouse-roleplay': 'Eş Rolleri',
+  'travel-companion': 'Gezi Eşliği',
+  'social-event': 'Sosyal Etkinlik',
+  'business-event': 'İş Daveti',
+  'culture-arts': 'Kültür & Sanat',
+  'sports-fitness': 'Spor & Fitness'
 };
 
 const orientationLabels = {
@@ -419,10 +426,12 @@ const HomePage = () => {
                 </SelectTrigger>
                 <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
                   <SelectItem value="all">Tüm Hizmetler</SelectItem>
-                  <SelectItem value="escort">Eskort</SelectItem>
-                  <SelectItem value="gigolo">Jigolo</SelectItem>
-                  <SelectItem value="masseuse">Masöz</SelectItem>
-                  <SelectItem value="companion">Eşlik</SelectItem>
+                  <SelectItem value="dinner-companion">Yemek Eşliği</SelectItem>
+                  <SelectItem value="event-companion">Davet Eşliği</SelectItem>
+                  <SelectItem value="gf-bf-experience">Sevgili Deneyimi</SelectItem>
+                  <SelectItem value="sleep-companion">Uyku Arkadaşlığı</SelectItem>
+                  <SelectItem value="spouse-roleplay">Eş Rolleri</SelectItem>
+                  <SelectItem value="travel-companion">Gezi Eşliği</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -624,28 +633,33 @@ const HomePage = () => {
           <div className="text-center mb-12">
             <span className="text-[#E91E63] text-sm uppercase tracking-wider">Kategoriler</span>
             <h2 className="text-3xl md:text-4xl font-bold text-white mt-2 font-serif">
-              Hizmet Türleri
+              Eşlik Hizmetleri
             </h2>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {[
-              { name: 'Eskort', slug: 'escort', icon: '👠', count: 250, color: 'from-pink-500 to-rose-600' },
-              { name: 'Jigolo', slug: 'gigolo', icon: '🕴️', count: 80, color: 'from-blue-500 to-indigo-600' },
-              { name: 'Masöz', slug: 'masseuse', icon: '💆', count: 120, color: 'from-purple-500 to-violet-600' },
-              { name: 'Eşlik', slug: 'companion', icon: '🥂', count: 95, color: 'from-amber-500 to-orange-600' },
+              { name: 'Yemek Eşliği', slug: 'dinner-companion', icon: '🍷', color: 'from-rose-500 to-pink-600' },
+              { name: 'Davet Eşliği', slug: 'event-companion', icon: '🎭', color: 'from-purple-500 to-violet-600' },
+              { name: 'Sevgili Deneyimi', slug: 'gf-bf-experience', icon: '💕', color: 'from-pink-500 to-red-500' },
+              { name: 'Uyku Arkadaşlığı', slug: 'sleep-companion', icon: '🌙', color: 'from-indigo-500 to-blue-600' },
+              { name: 'Eş Rolleri', slug: 'spouse-roleplay', icon: '💍', color: 'from-amber-500 to-orange-600' },
+              { name: 'Gezi Eşliği', slug: 'travel-companion', icon: '✈️', color: 'from-cyan-500 to-teal-600' },
+              { name: 'Sosyal Etkinlik', slug: 'social-event', icon: '🎉', color: 'from-fuchsia-500 to-pink-600' },
+              { name: 'İş Daveti', slug: 'business-event', icon: '💼', color: 'from-slate-500 to-gray-600' },
+              { name: 'Kültür & Sanat', slug: 'culture-arts', icon: '🎨', color: 'from-emerald-500 to-green-600' },
+              { name: 'Spor & Fitness', slug: 'sports-fitness', icon: '💪', color: 'from-orange-500 to-red-600' },
             ].map((service) => (
               <Link
                 key={service.slug}
                 to={`/${lang}/partnerler?service=${service.slug}`}
-                className="glass rounded-2xl p-6 text-center hover:border-[#E91E63]/50 transition-all group"
+                className="glass rounded-2xl p-4 text-center hover:border-[#E91E63]/50 transition-all group"
                 data-testid={`service-${service.slug}`}
               >
-                <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${service.color} flex items-center justify-center text-3xl group-hover:scale-110 transition-transform`}>
+                <div className={`w-14 h-14 mx-auto mb-3 rounded-xl bg-gradient-to-br ${service.color} flex items-center justify-center text-2xl group-hover:scale-110 transition-transform`}>
                   {service.icon}
                 </div>
-                <h3 className="text-white font-semibold text-lg">{service.name}</h3>
-                <p className="text-white/50 text-sm mt-1">{service.count}+ İlan</p>
+                <h3 className="text-white font-medium text-sm">{service.name}</h3>
               </Link>
             ))}
           </div>
@@ -690,23 +704,53 @@ const HomePage = () => {
             <div className="text-center mb-12">
               <span className="text-[#E91E63] text-sm uppercase tracking-wider">Lokasyonlar</span>
               <h2 className="text-3xl md:text-4xl font-bold text-white mt-2 font-serif">
-                Şehirlere Göre
+                Tüm Kıbrıs
               </h2>
+              <p className="text-white/50 mt-2">Kuzey ve Güney Kıbrıs'ın tüm şehirlerinde hizmet</p>
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {homeData.cities.map((city) => (
-                <Link
-                  key={city.id}
-                  to={`/${lang}/${city.slug}/partnerler`}
-                  className="glass rounded-2xl p-6 text-center hover:border-[#E91E63]/50 transition-all group"
-                  data-testid={`city-${city.slug}`}
-                >
-                  <MapPin className="w-8 h-8 text-[#E91E63] mx-auto mb-3 group-hover:scale-110 transition-transform" />
-                  <h3 className="text-white font-semibold">{city.name}</h3>
-                  <p className="text-white/50 text-sm mt-1">{city.partner_count || 0} İlan</p>
-                </Link>
-              ))}
+            {/* North Cyprus */}
+            <div className="mb-8">
+              <h3 className="text-white font-semibold text-lg mb-4 flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-red-500"></span>
+                Kuzey Kıbrıs (KKTC)
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                {homeData.cities.filter(c => c.region === 'north').map((city) => (
+                  <Link
+                    key={city.id}
+                    to={`/${lang}/${city.slug}/partnerler`}
+                    className="glass rounded-xl p-4 text-center hover:border-[#E91E63]/50 transition-all group"
+                    data-testid={`city-${city.slug}`}
+                  >
+                    <MapPin className="w-6 h-6 text-[#E91E63] mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                    <h3 className="text-white font-medium text-sm">{city.name}</h3>
+                    <p className="text-white/50 text-xs mt-1">{city.partner_count || 0} İlan</p>
+                  </Link>
+                ))}
+              </div>
+            </div>
+            
+            {/* South Cyprus */}
+            <div>
+              <h3 className="text-white font-semibold text-lg mb-4 flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+                Güney Kıbrıs (Rum Kesimi)
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {homeData.cities.filter(c => c.region === 'south').map((city) => (
+                  <Link
+                    key={city.id}
+                    to={`/${lang}/${city.slug}/partnerler`}
+                    className="glass rounded-xl p-4 text-center hover:border-[#E91E63]/50 transition-all group"
+                    data-testid={`city-${city.slug}`}
+                  >
+                    <MapPin className="w-6 h-6 text-blue-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                    <h3 className="text-white font-medium text-sm">{city.name}</h3>
+                    <p className="text-white/50 text-xs mt-1">{city.partner_count || 0} İlan</p>
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         </section>

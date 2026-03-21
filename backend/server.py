@@ -126,7 +126,7 @@ class PartnerProfileCreate(BaseModel):
     district_id: Optional[str] = None
     languages: List[str] = []
     category_ids: List[str] = []
-    service_types: List[str] = []  # escort, gigolo, masseuse, companion
+    service_types: List[str] = []  # dinner_companion, event_companion, sleep_companion, gf_bf_experience, spouse_roleplay, travel_companion
     orientations: List[str] = []  # heterosexual, lesbian, gay, bisexual, trans
     gender: str = "female"  # female, male, trans
     body_type: Optional[str] = None  # slim, athletic, curvy, plus-size
@@ -178,13 +178,16 @@ class CityCreate(BaseModel):
     name_en: str
     name_ru: str
     name_de: str
+    name_el: str  # Greek/Rumca
     slug: str
+    region: str = "north"  # north (KKTC), south (Greek Cyprus)
 
 class CategoryCreate(BaseModel):
     name_tr: str
     name_en: str
     name_ru: str
     name_de: str
+    name_el: str  # Greek/Rumca
     slug: str
     icon: Optional[str] = None
 
@@ -193,6 +196,7 @@ class PackageCreate(BaseModel):
     name_en: str
     name_ru: str
     name_de: str
+    name_el: str  # Greek/Rumca
     package_type: str  # standard, featured, city_vitrin, homepage_vitrin, premium
     price: float
     duration_days: int
@@ -1492,11 +1496,11 @@ async def get_homepage_data(lang: str = "tr"):
         "featured_profiles": featured_profiles,
         "today_available": today_available,
         "new_profiles": new_profiles,
-        "cities": [c for c in cities if c["partner_count"] > 0],
+        "cities": cities,  # Return all cities (both North and South Cyprus)
         "categories": categories,
         "stats": {
             "total_profiles": total_profiles,
-            "total_cities": total_cities
+            "total_cities": len(cities)
         }
     }
 
@@ -1547,58 +1551,86 @@ async def startup():
 
 async def seed_initial_data():
     """Seed initial cities, categories, packages"""
-    # Cities
-    cities = [
-        {"id": str(uuid.uuid4()), "name_tr": "Girne", "name_en": "Kyrenia", "name_ru": "Кирения", "name_de": "Kyrenia", "slug": "girne"},
-        {"id": str(uuid.uuid4()), "name_tr": "Lefkoşa", "name_en": "Nicosia", "name_ru": "Никосия", "name_de": "Nikosia", "slug": "lefkosa"},
-        {"id": str(uuid.uuid4()), "name_tr": "Gazimağusa", "name_en": "Famagusta", "name_ru": "Фамагуста", "name_de": "Famagusta", "slug": "gazimagusa"},
-        {"id": str(uuid.uuid4()), "name_tr": "Güzelyurt", "name_en": "Morphou", "name_ru": "Морфу", "name_de": "Morphou", "slug": "guzelyurt"},
-        {"id": str(uuid.uuid4()), "name_tr": "İskele", "name_en": "Iskele", "name_ru": "Искеле", "name_de": "Iskele", "slug": "iskele"},
-    ]
-    await db.cities.insert_many(cities)
     
-    # Categories
+    # ==================== CITIES ====================
+    # North Cyprus (KKTC)
+    north_cities = [
+        {"id": str(uuid.uuid4()), "name_tr": "Girne", "name_en": "Kyrenia", "name_ru": "Кирения", "name_de": "Kyrenia", "name_el": "Κερύνεια", "slug": "girne", "region": "north"},
+        {"id": str(uuid.uuid4()), "name_tr": "Lefkoşa (Kuzey)", "name_en": "North Nicosia", "name_ru": "Северная Никосия", "name_de": "Nord-Nikosia", "name_el": "Βόρεια Λευκωσία", "slug": "lefkosa-kuzey", "region": "north"},
+        {"id": str(uuid.uuid4()), "name_tr": "Gazimağusa", "name_en": "Famagusta", "name_ru": "Фамагуста", "name_de": "Famagusta", "name_el": "Αμμόχωστος", "slug": "gazimagusa", "region": "north"},
+        {"id": str(uuid.uuid4()), "name_tr": "Güzelyurt", "name_en": "Morphou", "name_ru": "Морфу", "name_de": "Morphou", "name_el": "Μόρφου", "slug": "guzelyurt", "region": "north"},
+        {"id": str(uuid.uuid4()), "name_tr": "İskele", "name_en": "Iskele", "name_ru": "Искеле", "name_de": "Iskele", "name_el": "Τρίκωμο", "slug": "iskele", "region": "north"},
+        {"id": str(uuid.uuid4()), "name_tr": "Lefke", "name_en": "Lefke", "name_ru": "Лефке", "name_de": "Lefke", "name_el": "Λεύκα", "slug": "lefke", "region": "north"},
+        {"id": str(uuid.uuid4()), "name_tr": "Dipkarpaz", "name_en": "Rizokarpaso", "name_ru": "Дипкарпаз", "name_de": "Rizokarpaso", "name_el": "Ριζοκάρπασο", "slug": "dipkarpaz", "region": "north"},
+        {"id": str(uuid.uuid4()), "name_tr": "Alsancak", "name_en": "Alsancak", "name_ru": "Алсанджак", "name_de": "Alsancak", "name_el": "Καραβάς", "slug": "alsancak", "region": "north"},
+        {"id": str(uuid.uuid4()), "name_tr": "Lapta", "name_en": "Lapithos", "name_ru": "Лапта", "name_de": "Lapithos", "name_el": "Λάπηθος", "slug": "lapta", "region": "north"},
+        {"id": str(uuid.uuid4()), "name_tr": "Çatalköy", "name_en": "Catalköy", "name_ru": "Чаталкёй", "name_de": "Catalköy", "name_el": "Άγιος Επίκτητος", "slug": "catalkoy", "region": "north"},
+    ]
+    
+    # South Cyprus (Greek Cyprus - Rum Kesimi)
+    south_cities = [
+        {"id": str(uuid.uuid4()), "name_tr": "Lefkoşa (Güney)", "name_en": "Nicosia", "name_ru": "Никосия", "name_de": "Nikosia", "name_el": "Λευκωσία", "slug": "lefkosa-guney", "region": "south"},
+        {"id": str(uuid.uuid4()), "name_tr": "Limasol", "name_en": "Limassol", "name_ru": "Лимасол", "name_de": "Limassol", "name_el": "Λεμεσός", "slug": "limasol", "region": "south"},
+        {"id": str(uuid.uuid4()), "name_tr": "Larnaka", "name_en": "Larnaca", "name_ru": "Ларнака", "name_de": "Larnaka", "name_el": "Λάρνακα", "slug": "larnaka", "region": "south"},
+        {"id": str(uuid.uuid4()), "name_tr": "Baf", "name_en": "Paphos", "name_ru": "Пафос", "name_de": "Paphos", "name_el": "Πάφος", "slug": "baf", "region": "south"},
+        {"id": str(uuid.uuid4()), "name_tr": "Ayia Napa", "name_en": "Ayia Napa", "name_ru": "Айя-Напа", "name_de": "Ayia Napa", "name_el": "Αγία Νάπα", "slug": "ayia-napa", "region": "south"},
+        {"id": str(uuid.uuid4()), "name_tr": "Protaras", "name_en": "Protaras", "name_ru": "Протарас", "name_de": "Protaras", "name_el": "Πρωταράς", "slug": "protaras", "region": "south"},
+        {"id": str(uuid.uuid4()), "name_tr": "Paralimni", "name_en": "Paralimni", "name_ru": "Паралимни", "name_de": "Paralimni", "name_el": "Παραλίμνι", "slug": "paralimni", "region": "south"},
+        {"id": str(uuid.uuid4()), "name_tr": "Polis", "name_en": "Polis Chrysochous", "name_ru": "Полис", "name_de": "Polis", "name_el": "Πόλις Χρυσοχούς", "slug": "polis", "region": "south"},
+    ]
+    
+    all_cities = north_cities + south_cities
+    await db.cities.insert_many(all_cities)
+    
+    # ==================== CATEGORIES (Service Types) ====================
     categories = [
-        {"id": str(uuid.uuid4()), "name_tr": "Akşam Yemeği", "name_en": "Dinner Date", "name_ru": "Ужин", "name_de": "Abendessen", "slug": "dinner-date", "icon": "utensils"},
-        {"id": str(uuid.uuid4()), "name_tr": "Sosyal Etkinlik", "name_en": "Social Event", "name_ru": "Социальное мероприятие", "name_de": "Gesellschaftsveranstaltung", "slug": "social-event", "icon": "users"},
-        {"id": str(uuid.uuid4()), "name_tr": "İş Daveti", "name_en": "Business Event", "name_ru": "Деловое мероприятие", "name_de": "Geschäftsveranstaltung", "slug": "business-event", "icon": "briefcase"},
-        {"id": str(uuid.uuid4()), "name_tr": "Gezi Eşliği", "name_en": "Travel Companion", "name_ru": "Компаньон в путешествии", "name_de": "Reisebegleitung", "slug": "travel-companion", "icon": "plane"},
-        {"id": str(uuid.uuid4()), "name_tr": "Kültür & Sanat", "name_en": "Culture & Arts", "name_ru": "Культура и искусство", "name_de": "Kultur & Kunst", "slug": "culture-arts", "icon": "palette"},
+        {"id": str(uuid.uuid4()), "name_tr": "Yemek Eşliği", "name_en": "Dinner Companion", "name_ru": "Компаньон за ужином", "name_de": "Essensbegleitung", "name_el": "Σύντροφος για δείπνο", "slug": "dinner-companion", "icon": "utensils", "type": "service"},
+        {"id": str(uuid.uuid4()), "name_tr": "Davet Eşliği", "name_en": "Event Companion", "name_ru": "Компаньон на мероприятие", "name_de": "Veranstaltungsbegleitung", "name_el": "Σύντροφος σε εκδήλωση", "slug": "event-companion", "icon": "calendar", "type": "service"},
+        {"id": str(uuid.uuid4()), "name_tr": "Uyku Arkadaşlığı", "name_en": "Sleep Companion", "name_ru": "Партнер для сна", "name_de": "Schlafbegleitung", "name_el": "Σύντροφος για ύπνο", "slug": "sleep-companion", "icon": "moon", "type": "service"},
+        {"id": str(uuid.uuid4()), "name_tr": "Sevgili Deneyimi", "name_en": "GF/BF Experience", "name_ru": "Опыт отношений", "name_de": "Freund/in Erlebnis", "name_el": "Εμπειρία σχέσης", "slug": "gf-bf-experience", "icon": "heart", "type": "service"},
+        {"id": str(uuid.uuid4()), "name_tr": "Eş Rolleri", "name_en": "Spouse Roleplay", "name_ru": "Роль супруга", "name_de": "Ehepartner Rollenspiel", "name_el": "Ρόλοι συζύγου", "slug": "spouse-roleplay", "icon": "users", "type": "service"},
+        {"id": str(uuid.uuid4()), "name_tr": "Gezi Eşliği", "name_en": "Travel Companion", "name_ru": "Компаньон в путешествии", "name_de": "Reisebegleitung", "name_el": "Σύντροφος ταξιδιού", "slug": "travel-companion", "icon": "plane", "type": "service"},
+        {"id": str(uuid.uuid4()), "name_tr": "Sosyal Etkinlik", "name_en": "Social Event", "name_ru": "Социальное мероприятие", "name_de": "Gesellschaftsveranstaltung", "name_el": "Κοινωνική εκδήλωση", "slug": "social-event", "icon": "users", "type": "service"},
+        {"id": str(uuid.uuid4()), "name_tr": "İş Daveti", "name_en": "Business Event", "name_ru": "Деловое мероприятие", "name_de": "Geschäftsveranstaltung", "name_el": "Επαγγελματική εκδήλωση", "slug": "business-event", "icon": "briefcase", "type": "service"},
+        {"id": str(uuid.uuid4()), "name_tr": "Kültür & Sanat", "name_en": "Culture & Arts", "name_ru": "Культура и искусство", "name_de": "Kultur & Kunst", "name_el": "Πολιτισμός & Τέχνη", "slug": "culture-arts", "icon": "palette", "type": "service"},
+        {"id": str(uuid.uuid4()), "name_tr": "Spor & Fitness", "name_en": "Sports & Fitness", "name_ru": "Спорт и фитнес", "name_de": "Sport & Fitness", "name_el": "Αθλητισμός & Γυμναστική", "slug": "sports-fitness", "icon": "dumbbell", "type": "service"},
     ]
     await db.categories.insert_many(categories)
     
-    # Packages
+    # ==================== PACKAGES ====================
     packages = [
-        {"id": str(uuid.uuid4()), "name_tr": "Standart", "name_en": "Standard", "name_ru": "Стандарт", "name_de": "Standard", "package_type": "standard", "price": 0.0, "duration_days": 30, "priority_score": 0, "is_active": True, "features": {}},
-        {"id": str(uuid.uuid4()), "name_tr": "Öne Çıkan", "name_en": "Featured", "name_ru": "Рекомендуемый", "name_de": "Empfohlen", "package_type": "featured", "price": 29.99, "duration_days": 30, "priority_score": 50, "is_active": True, "features": {"badge": "featured"}},
-        {"id": str(uuid.uuid4()), "name_tr": "Şehir Vitrini", "name_en": "City Showcase", "name_ru": "Городская витрина", "name_de": "Stadt-Schaufenster", "package_type": "city_vitrin", "price": 49.99, "duration_days": 30, "priority_score": 75, "is_active": True, "features": {"badge": "vitrin", "city_featured": True}},
-        {"id": str(uuid.uuid4()), "name_tr": "Ana Sayfa Vitrini", "name_en": "Homepage Showcase", "name_ru": "Главная витрина", "name_de": "Homepage-Schaufenster", "package_type": "homepage_vitrin", "price": 79.99, "duration_days": 30, "priority_score": 90, "is_active": True, "features": {"badge": "vitrin", "homepage_featured": True}},
-        {"id": str(uuid.uuid4()), "name_tr": "Premium", "name_en": "Premium", "name_ru": "Премиум", "name_de": "Premium", "package_type": "premium", "price": 99.99, "duration_days": 30, "priority_score": 100, "is_active": True, "features": {"badge": "premium", "homepage_featured": True, "city_featured": True, "verified_badge": True}},
+        {"id": str(uuid.uuid4()), "name_tr": "Standart", "name_en": "Standard", "name_ru": "Стандарт", "name_de": "Standard", "name_el": "Κανονικό", "package_type": "standard", "price": 0.0, "duration_days": 30, "priority_score": 0, "is_active": True, "features": {}},
+        {"id": str(uuid.uuid4()), "name_tr": "Öne Çıkan", "name_en": "Featured", "name_ru": "Рекомендуемый", "name_de": "Empfohlen", "name_el": "Προτεινόμενο", "package_type": "featured", "price": 29.99, "duration_days": 30, "priority_score": 50, "is_active": True, "features": {"badge": "featured"}},
+        {"id": str(uuid.uuid4()), "name_tr": "Şehir Vitrini", "name_en": "City Showcase", "name_ru": "Городская витрина", "name_de": "Stadt-Schaufenster", "name_el": "Βιτρίνα πόλης", "package_type": "city_vitrin", "price": 49.99, "duration_days": 30, "priority_score": 75, "is_active": True, "features": {"badge": "vitrin", "city_featured": True}},
+        {"id": str(uuid.uuid4()), "name_tr": "Ana Sayfa Vitrini", "name_en": "Homepage Showcase", "name_ru": "Главная витрина", "name_de": "Homepage-Schaufenster", "name_el": "Βιτρίνα αρχικής", "package_type": "homepage_vitrin", "price": 79.99, "duration_days": 30, "priority_score": 90, "is_active": True, "features": {"badge": "vitrin", "homepage_featured": True}},
+        {"id": str(uuid.uuid4()), "name_tr": "Premium", "name_en": "Premium", "name_ru": "Премиум", "name_de": "Premium", "name_el": "Πριμιουμ", "package_type": "premium", "price": 99.99, "duration_days": 30, "priority_score": 100, "is_active": True, "features": {"badge": "premium", "homepage_featured": True, "city_featured": True, "verified_badge": True}},
     ]
     await db.packages.insert_many(packages)
     
-    # Default settings
+    # ==================== SETTINGS ====================
     await db.settings.insert_many([
         {"key": "netgsm", "value": {"enabled": False, "usercode": "", "password": "", "msgheader": ""}},
         {"key": "stripe", "value": {"api_key": "", "test_mode": True}},
-        {"key": "site", "value": {"name": "KKTCX", "default_language": "tr", "languages": ["tr", "en", "ru", "de"]}}
+        {"key": "site", "value": {"name": "KKTCX", "default_language": "tr", "languages": ["tr", "en", "ru", "de", "el"]}}
     ])
     
-    # Create admin user
-    admin_id = str(uuid.uuid4())
-    await db.users.insert_one({
-        "id": admin_id,
-        "email": "admin@kktcx.com",
-        "password": hash_password("admin123"),
-        "name": "Admin",
-        "role": "admin",
-        "language": "tr",
-        "is_active": True,
-        "is_verified": True,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    })
+    # ==================== ADMIN USER (only if not exists) ====================
+    existing_admin = await db.users.find_one({"email": "admin@kktcx.com"})
+    if not existing_admin:
+        admin_id = str(uuid.uuid4())
+        await db.users.insert_one({
+            "id": admin_id,
+            "email": "admin@kktcx.com",
+            "password": hash_password("admin123"),
+            "name": "Admin",
+            "role": "admin",
+            "language": "tr",
+            "is_active": True,
+            "is_verified": True,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
     
-    logger.info("Initial data seeded")
+    logger.info("Initial data seeded with all Cyprus cities and new service types")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

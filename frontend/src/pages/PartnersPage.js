@@ -27,11 +27,18 @@ import { Slider } from '../components/ui/slider';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
+// New legal service types
 const serviceTypeLabels = {
-  escort: 'Eskort',
-  gigolo: 'Jigolo',
-  masseuse: 'Masöz',
-  companion: 'Eşlik'
+  'dinner-companion': 'Yemek Eşliği',
+  'event-companion': 'Davet Eşliği',
+  'sleep-companion': 'Uyku Arkadaşlığı',
+  'gf-bf-experience': 'Sevgili Deneyimi',
+  'spouse-roleplay': 'Eş Rolleri',
+  'travel-companion': 'Gezi Eşliği',
+  'social-event': 'Sosyal Etkinlik',
+  'business-event': 'İş Daveti',
+  'culture-arts': 'Kültür & Sanat',
+  'sports-fitness': 'Spor & Fitness'
 };
 
 const orientationLabels = {
@@ -348,10 +355,12 @@ const PartnersPage = () => {
           </SelectTrigger>
           <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
             <SelectItem value="all">Tümü</SelectItem>
-            <SelectItem value="escort">Eskort</SelectItem>
-            <SelectItem value="gigolo">Jigolo</SelectItem>
-            <SelectItem value="masseuse">Masöz</SelectItem>
-            <SelectItem value="companion">Eşlik</SelectItem>
+            <SelectItem value="dinner-companion">Yemek Eşliği</SelectItem>
+            <SelectItem value="event-companion">Davet Eşliği</SelectItem>
+            <SelectItem value="gf-bf-experience">Sevgili Deneyimi</SelectItem>
+            <SelectItem value="sleep-companion">Uyku Arkadaşlığı</SelectItem>
+            <SelectItem value="spouse-roleplay">Eş Rolleri</SelectItem>
+            <SelectItem value="travel-companion">Gezi Eşliği</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -533,15 +542,16 @@ const PartnersPage = () => {
           </Select>
 
           <Select value={filters.service_type || "all"} onValueChange={(v) => updateFilter('service_type', v === "all" ? "" : v)}>
-            <SelectTrigger className="input-glass w-[140px]" data-testid="filter-service">
+            <SelectTrigger className="input-glass w-[160px]" data-testid="filter-service">
               <SelectValue placeholder="Hizmet" />
             </SelectTrigger>
             <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
               <SelectItem value="all">Tüm Hizmetler</SelectItem>
-              <SelectItem value="escort">Eskort</SelectItem>
-              <SelectItem value="gigolo">Jigolo</SelectItem>
-              <SelectItem value="masseuse">Masöz</SelectItem>
-              <SelectItem value="companion">Eşlik</SelectItem>
+              <SelectItem value="dinner-companion">Yemek Eşliği</SelectItem>
+              <SelectItem value="event-companion">Davet Eşliği</SelectItem>
+              <SelectItem value="gf-bf-experience">Sevgili Deneyimi</SelectItem>
+              <SelectItem value="sleep-companion">Uyku Arkadaşlığı</SelectItem>
+              <SelectItem value="spouse-roleplay">Eş Rolleri</SelectItem>
             </SelectContent>
           </Select>
 
