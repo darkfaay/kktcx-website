@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, UserCheck, MapPin, Tag, Package, 
   Settings, LogOut, Menu, X, ChevronLeft, ChevronRight,
   Bell, Search, Globe, FileText, Image, Megaphone, BarChart3,
-  Shield, Palette, Languages, MousePointer
+  Shield, Palette, Languages, MousePointer, MessageSquare
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -57,6 +57,7 @@ const AdminLayout = () => {
       title: 'Sistem',
       items: [
         { path: '/entegrasyonlar', icon: MousePointer, label: 'Entegrasyonlar', badge: null },
+        { path: '/sms', icon: MessageSquare, label: 'SMS Yönetimi', badge: null },
         { path: '/ceviri', icon: Languages, label: 'Dil & Çeviri', badge: null },
         { path: '/raporlar', icon: BarChart3, label: 'Raporlar', badge: null },
       ]

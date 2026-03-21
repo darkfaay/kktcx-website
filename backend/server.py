@@ -1580,6 +1580,39 @@ async def admin_get_sms_logs(
     
     return {"logs": logs, "total": total, "page": page, "limit": limit}
 
+@api_router.get("/admin/sms/logs")
+async def admin_get_sms_logs_v2(
+    status: Optional[str] = None,
+    page: int = 1,
+    limit: int = 50,
+    admin: dict = Depends(require_admin)
+):
+    """Get SMS logs (v2 endpoint)"""
+    query = {}
+    if status:
+        query["status"] = status
+    
+    total = await db.sms_logs.count_documents(query)
+    skip = (page - 1) * limit
+    logs = await db.sms_logs.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    return {"logs": logs, "total": total, "page": page, "limit": limit}
+
+@api_router.post("/admin/sms/test")
+async def admin_send_test_sms(
+    data: Dict[str, str],
+    admin: dict = Depends(require_admin)
+):
+    """Send test SMS"""
+    phone = data.get("phone", "")
+    message = data.get("message", "KKTCX test mesajı")
+    
+    if not phone:
+        raise HTTPException(status_code=400, detail="Phone number required")
+    
+    result = await send_sms_notification(phone, message)
+    return {"success": result, "error": None if result else "SMS gönderilemedi"}
+
 # ==================== TRANSLATIONS ====================
 
 @api_router.get("/translations/{lang}")
@@ -1597,6 +1630,101 @@ async def update_translations(lang: str, data: Dict[str, str], admin: dict = Dep
     return {"success": True}
 
 # ==================== SEO ====================
+
+@api_router.get("/sitemap.xml")
+async def get_sitemap():
+    """Generate dynamic sitemap.xml"""
+    from fastapi.responses import Response
+    
+    # Get all cities
+    cities = await db.cities.find({}, {"slug": 1, "_id": 0}).to_list(100)
+    
+    # Get all approved partner profiles
+    profiles = await db.partner_profiles.find(
+        {"status": "approved"},
+        {"slug": 1, "_id": 0}
+    ).to_list(1000)
+    
+    # Base URL (replace with actual domain in production)
+    base_url = "https://kktcx.com"
+    languages = ["tr", "en", "ru", "de", "el"]
+    
+    # Static pages
+    static_pages = ["", "/partnerler", "/hakkimizda", "/iletisim", "/sss", "/gizlilik", "/kullanim-sartlari"]
+    
+    urls = []
+    
+    # Add static pages for each language
+    for lang in languages:
+        for page in static_pages:
+            urls.append(f"{base_url}/{lang}{page}")
+    
+    # Add city pages
+    for city in cities:
+        if city.get("slug"):
+            for lang in languages:
+                urls.append(f"{base_url}/{lang}/sehir/{city['slug']}")
+    
+    # Add partner profile pages
+    for profile in profiles:
+        if profile.get("slug"):
+            for lang in languages:
+                urls.append(f"{base_url}/{lang}/partner/{profile['slug']}")
+    
+    # Generate XML
+    xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml_content += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    
+    for url in urls:
+        xml_content += f'  <url>\n    <loc>{url}</loc>\n    <changefreq>weekly</changefreq>\n  </url>\n'
+    
+    xml_content += '</urlset>'
+    
+    return Response(content=xml_content, media_type="application/xml")
+
+@api_router.get("/robots.txt")
+async def get_robots():
+    """Generate robots.txt from settings"""
+    from fastapi.responses import PlainTextResponse
+    
+    # Get robots settings
+    robots_settings = await db.settings.find_one({"key": "seo_robots"}, {"_id": 0})
+    
+    if robots_settings and robots_settings.get("value"):
+        settings = robots_settings["value"]
+        
+        lines = ["User-agent: *"]
+        
+        if settings.get("allow_indexing", True):
+            lines.append("Allow: /")
+        else:
+            lines.append("Disallow: /")
+        
+        if settings.get("allow_follow", True):
+            pass  # Default is follow
+        
+        # Add custom rules
+        if settings.get("custom_rules"):
+            lines.append("")
+            lines.extend(settings["custom_rules"].strip().split("\n"))
+        
+        # Add sitemap
+        if settings.get("sitemap_url"):
+            lines.append("")
+            lines.append(f"Sitemap: {settings['sitemap_url']}")
+        else:
+            lines.append("")
+            lines.append("Sitemap: https://kktcx.com/api/sitemap.xml")
+        
+        return PlainTextResponse("\n".join(lines))
+    
+    # Default robots.txt
+    default_robots = """User-agent: *
+Allow: /
+
+Sitemap: https://kktcx.com/api/sitemap.xml"""
+    
+    return PlainTextResponse(default_robots)
 
 @api_router.get("/seo/{page_slug}")
 async def get_seo(page_slug: str, lang: str = "tr"):

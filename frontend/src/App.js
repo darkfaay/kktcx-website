@@ -46,6 +46,7 @@ import AdminSiteSettings from './pages/admin/AdminSiteSettings';
 import AdminSEO from './pages/admin/AdminSEO';
 import AdminContent from './pages/admin/AdminContent';
 import AdminMedia from './pages/admin/AdminMedia';
+import AdminSMS from './pages/admin/AdminSMS';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, roles = [] }) => {
@@ -149,6 +150,7 @@ function AppRoutes() {
             <Route path="ceviri" element={<AdminContent />} />
             <Route path="raporlar" element={<AdminDashboard />} />
             <Route path="medya" element={<AdminMedia />} />
+            <Route path="sms" element={<AdminSMS />} />
             <Route path="ayarlar" element={<AdminSettings />} />
           </Route>
         </Route>
