@@ -502,8 +502,8 @@ const PartnersPage = () => {
         <p className="text-white/60 mt-2">{total} partner bulundu</p>
       </div>
 
-      {/* Filters Bar */}
-      <div className="flex flex-wrap items-center gap-4 mb-8">
+      {/* Top Bar - Mobile Filter + Sort */}
+      <div className="flex items-center justify-between gap-4 mb-6">
         {/* Mobile Filter Button */}
         <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
           <SheetTrigger asChild>
@@ -527,94 +527,31 @@ const PartnersPage = () => {
           </SheetContent>
         </Sheet>
 
-        {/* Desktop Quick Filters */}
-        <div className="hidden md:flex items-center gap-4 flex-1 flex-wrap">
-          <Select value={filters.gender || "all"} onValueChange={(v) => updateFilter('gender', v === "all" ? "" : v)}>
-            <SelectTrigger className="input-glass w-[140px]" data-testid="filter-gender">
-              <SelectValue placeholder="Cinsiyet" />
-            </SelectTrigger>
-            <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
-              <SelectItem value="all">Tüm Cinsiyetler</SelectItem>
-              <SelectItem value="female">Kadın</SelectItem>
-              <SelectItem value="male">Erkek</SelectItem>
-              <SelectItem value="trans">Trans</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={filters.service_type || "all"} onValueChange={(v) => updateFilter('service_type', v === "all" ? "" : v)}>
-            <SelectTrigger className="input-glass w-[160px]" data-testid="filter-service">
-              <SelectValue placeholder="Hizmet" />
-            </SelectTrigger>
-            <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
-              <SelectItem value="all">Tüm Hizmetler</SelectItem>
-              <SelectItem value="dinner-companion">Yemek Eşliği</SelectItem>
-              <SelectItem value="event-companion">Davet Eşliği</SelectItem>
-              <SelectItem value="gf-bf-experience">Sevgili Deneyimi</SelectItem>
-              <SelectItem value="sleep-companion">Uyku Arkadaşlığı</SelectItem>
-              <SelectItem value="spouse-roleplay">Eş Rolleri</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={filters.orientation || "all"} onValueChange={(v) => updateFilter('orientation', v === "all" ? "" : v)}>
-            <SelectTrigger className="input-glass w-[160px]" data-testid="filter-orientation">
-              <SelectValue placeholder="Yönelim" />
-            </SelectTrigger>
-            <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
-              <SelectItem value="all">Tüm Yönelimler</SelectItem>
-              <SelectItem value="heterosexual">Heteroseksüel</SelectItem>
-              <SelectItem value="lesbian">Lezbiyen</SelectItem>
-              <SelectItem value="gay">Gay</SelectItem>
-              <SelectItem value="bisexual">Biseksüel</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={filters.city_id || "all"} onValueChange={(v) => updateFilter('city_id', v === "all" ? "" : v)}>
-            <SelectTrigger className="input-glass w-[150px]" data-testid="filter-city">
-              <SelectValue placeholder={t('city')} />
-            </SelectTrigger>
-            <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
-              <SelectItem value="all">Tüm Şehirler</SelectItem>
-              {cities.map((city) => (
-                <SelectItem key={city.id} value={city.id}>{city.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Button
-            variant={filters.available_today ? "default" : "outline"}
-            className={filters.available_today ? "btn-primary" : "btn-outline"}
-            onClick={() => updateFilter('available_today', !filters.available_today)}
-            data-testid="filter-today"
-          >
-            <Clock className="w-4 h-4 mr-2" />
-            Bugün
-          </Button>
-
+        {/* Sort - Visible on all screens */}
+        <div className="flex items-center gap-3 ml-auto">
           {activeFiltersCount > 0 && (
-            <Button variant="ghost" className="text-white/60" onClick={clearFilters}>
-              <X className="w-4 h-4 mr-2" />
+            <Button variant="ghost" size="sm" className="text-white/60 hidden md:flex" onClick={clearFilters}>
+              <X className="w-4 h-4 mr-1" />
               Temizle ({activeFiltersCount})
             </Button>
           )}
+          <Select value={filters.sort_by} onValueChange={(v) => updateFilter('sort_by', v)}>
+            <SelectTrigger className="input-glass w-[140px] md:w-[160px]" data-testid="sort-select">
+              <SelectValue placeholder="Sıralama" />
+            </SelectTrigger>
+            <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
+              <SelectItem value="recommended">Önerilen</SelectItem>
+              <SelectItem value="newest">En Yeni</SelectItem>
+              <SelectItem value="popular">En Popüler</SelectItem>
+              <SelectItem value="featured">Öne Çıkanlar</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-
-        {/* Sort */}
-        <Select value={filters.sort_by} onValueChange={(v) => updateFilter('sort_by', v)}>
-          <SelectTrigger className="input-glass w-[160px]" data-testid="sort-select">
-            <SelectValue placeholder="Sıralama" />
-          </SelectTrigger>
-          <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
-            <SelectItem value="recommended">Önerilen</SelectItem>
-            <SelectItem value="newest">En Yeni</SelectItem>
-            <SelectItem value="popular">En Popüler</SelectItem>
-            <SelectItem value="featured">Öne Çıkanlar</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Content */}
       <div className="flex gap-8">
-        {/* Desktop Sidebar Filters */}
+        {/* Desktop Sidebar Filters - Only place filters exist on desktop */}
         <aside className="hidden md:block w-72 shrink-0">
           <div className="glass rounded-xl p-6 sticky top-24">
             <h3 className="text-white font-semibold mb-6 flex items-center gap-2">

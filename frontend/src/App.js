@@ -73,7 +73,7 @@ function AppRoutes() {
       <Route path="/" element={<Navigate to="/tr" replace />} />
       
       {/* Language-prefixed routes */}
-      {['tr', 'en', 'ru', 'de'].map((lang) => (
+      {['tr', 'en', 'ru', 'de', 'el'].map((lang) => (
         <Route key={lang} path={`/${lang}`}>
           {/* Public Routes */}
           <Route element={<PublicLayout />}>
