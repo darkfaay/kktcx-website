@@ -4,6 +4,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, LanguageProvider, useAuth } from './context/AppContext';
 import { Toaster } from './components/ui/sonner';
 import AgeVerification from './components/AgeVerification';
+import BrandingProvider from './components/BrandingProvider';
 
 // Scroll to top on route change
 const ScrollToTop = () => {
@@ -197,9 +198,11 @@ function App() {
       <BrowserRouter>
         <LanguageProvider>
           <AuthProvider>
-            <AgeVerification />
-            <AppRoutes />
-            <Toaster position="top-right" richColors />
+            <BrandingProvider>
+              <AgeVerification />
+              <AppRoutes />
+              <Toaster position="top-right" richColors />
+            </BrandingProvider>
           </AuthProvider>
         </LanguageProvider>
       </BrowserRouter>

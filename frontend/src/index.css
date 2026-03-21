@@ -33,6 +33,11 @@
   --midnight: #050505;
   --midnight-paper: #0F0F10;
   --midnight-subtle: #18181B;
+  
+  /* Dynamic Branding Colors (can be overridden via JS) */
+  --color-primary: #E91E63;
+  --color-secondary: #9C27B0;
+  --color-accent: #FFD700;
 }
 
 * {

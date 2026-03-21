@@ -22,22 +22,29 @@ const Logo = ({ size = 'default', showBadge = true }) => {
     <div className="flex items-center gap-2 group">
       {/* Main Logo Text */}
       <div className="relative">
-        {/* Glow Effect */}
-        <div className="absolute -inset-2 bg-gradient-to-r from-[#E91E63] via-[#9C27B0] to-[#E91E63] rounded-lg blur-lg opacity-0 group-hover:opacity-40 transition-opacity duration-500" />
+        {/* Glow Effect - uses CSS variable */}
+        <div className="absolute -inset-2 rounded-lg blur-lg opacity-0 group-hover:opacity-40 transition-opacity duration-500" 
+             style={{ background: `linear-gradient(to right, var(--color-primary), var(--color-secondary), var(--color-primary))` }} />
         
         <span className={`${currentSize.text} font-bold font-serif relative`}>
-          <span className="bg-gradient-to-r from-[#E91E63] via-[#FF4081] to-[#E91E63] bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
+          <span className="bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]"
+                style={{ backgroundImage: `linear-gradient(to right, var(--color-primary), #FF4081, var(--color-primary))` }}>
             KKT
           </span>
-          <span className="bg-gradient-to-r from-[#FFD700] via-[#FFA500] to-[#FFD700] bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]" style={{ animationDelay: '0.5s' }}>
+          <span className="bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]" 
+                style={{ backgroundImage: `linear-gradient(to right, var(--color-accent), #FFA500, var(--color-accent))`, animationDelay: '0.5s' }}>
             CX
           </span>
         </span>
       </div>
       
-      {/* 18+ Badge */}
+      {/* 18+ Badge - uses CSS variable */}
       {showBadge && (
-        <span className={`${currentSize.badge} rounded-full font-bold bg-gradient-to-r from-[#E91E63] to-[#9C27B0] text-white shadow-lg shadow-[#E91E63]/30`}>
+        <span className={`${currentSize.badge} rounded-full font-bold text-white shadow-lg`}
+              style={{ 
+                background: `linear-gradient(to right, var(--color-primary), var(--color-secondary))`,
+                boxShadow: `0 10px 15px -3px color-mix(in srgb, var(--color-primary) 30%, transparent)`
+              }}>
           18+
         </span>
       )}
@@ -48,10 +55,12 @@ const Logo = ({ size = 'default', showBadge = true }) => {
 // Simple text version for places where we just need styled text
 export const LogoText = ({ className = '' }) => (
   <span className={`font-bold font-serif ${className}`}>
-    <span className="bg-gradient-to-r from-[#E91E63] via-[#FF4081] to-[#E91E63] bg-clip-text text-transparent">
+    <span className="bg-clip-text text-transparent"
+          style={{ backgroundImage: `linear-gradient(to right, var(--color-primary), #FF4081, var(--color-primary))` }}>
       KKT
     </span>
-    <span className="bg-gradient-to-r from-[#FFD700] via-[#FFA500] to-[#FFD700] bg-clip-text text-transparent">
+    <span className="bg-clip-text text-transparent"
+          style={{ backgroundImage: `linear-gradient(to right, var(--color-accent), #FFA500, var(--color-accent))` }}>
       CX
     </span>
   </span>
