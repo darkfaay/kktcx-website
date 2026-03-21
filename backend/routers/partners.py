@@ -377,7 +377,7 @@ async def set_cover_image(image_id: str, user: dict = Depends(require_partner)):
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
     
-    image = next((img for img in profile.get("images", []) if img["id"] == image_id), None)
+    image = next((img for img in profile.get("images", []) if img.get("id") == image_id), None)
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
     
@@ -385,6 +385,43 @@ async def set_cover_image(image_id: str, user: dict = Depends(require_partner)):
         {"user_id": user["id"]},
         {"$set": {"cover_image": image}}
     )
+    
+    return {"success": True}
+
+
+@router.put("/partner/images/{image_id}/blur")
+async def toggle_image_blur(
+    image_id: str, 
+    is_blurred: bool = Query(...),
+    user: dict = Depends(require_partner)
+):
+    """Toggle blur state of an image"""
+    profile = await db.partner_profiles.find_one({"user_id": user["id"]})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    
+    images = profile.get("images", [])
+    updated = False
+    for img in images:
+        if img.get("id") == image_id:
+            img["is_blurred"] = is_blurred
+            updated = True
+            break
+    
+    if not updated:
+        raise HTTPException(status_code=404, detail="Image not found")
+    
+    await db.partner_profiles.update_one(
+        {"user_id": user["id"]},
+        {"$set": {"images": images}}
+    )
+    
+    # Also update cover_image if this is the cover
+    if profile.get("cover_image", {}).get("id") == image_id:
+        await db.partner_profiles.update_one(
+            {"user_id": user["id"]},
+            {"$set": {"cover_image.is_blurred": is_blurred}}
+        )
     
     return {"success": True}
 
