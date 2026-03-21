@@ -58,23 +58,54 @@ async def health():
 @app.get("/api/catalog/cities")
 async def get_catalog_cities(lang: str = "tr"):
     cities = await db.cities.find({}, {"_id": 0}).to_list(100)
-    return cities
+    # Transform to frontend expected format
+    result = []
+    for city in cities:
+        result.append({
+            "id": city.get("id"),
+            "slug": city.get("slug"),
+            "name": city.get("names", {}).get(lang, city.get("names", {}).get("tr", "")),
+            "region": city.get("region")
+        })
+    return result
 
 @app.get("/api/cities")
 async def get_cities(lang: str = "tr"):
     cities = await db.cities.find({}, {"_id": 0}).to_list(100)
-    return cities
+    result = []
+    for city in cities:
+        result.append({
+            "id": city.get("id"),
+            "slug": city.get("slug"),
+            "name": city.get("names", {}).get(lang, city.get("names", {}).get("tr", "")),
+            "region": city.get("region")
+        })
+    return result
 
 # Get categories  
 @app.get("/api/catalog/categories")
 async def get_catalog_categories(lang: str = "tr"):
     categories = await db.categories.find({}, {"_id": 0}).to_list(100)
-    return categories
+    result = []
+    for cat in categories:
+        result.append({
+            "id": cat.get("id"),
+            "slug": cat.get("slug"),
+            "name": cat.get("names", {}).get(lang, cat.get("names", {}).get("tr", ""))
+        })
+    return result
 
 @app.get("/api/categories")
 async def get_categories(lang: str = "tr"):
     categories = await db.categories.find({}, {"_id": 0}).to_list(100)
-    return categories
+    result = []
+    for cat in categories:
+        result.append({
+            "id": cat.get("id"),
+            "slug": cat.get("slug"),
+            "name": cat.get("names", {}).get(lang, cat.get("names", {}).get("tr", ""))
+        })
+    return result
 
 # Get settings
 @app.get("/api/settings/public")
