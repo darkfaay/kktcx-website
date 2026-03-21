@@ -1,14 +1,14 @@
 """
 Routers package
 """
-from routers.auth import router as auth_router
-from routers.partners import router as partners_router
-from routers.catalog import router as catalog_router
-from routers.messages import router as messages_router, websocket_endpoint
-from routers.appointments import router as appointments_router
-from routers.admin import router as admin_router
-from routers.reviews import router as reviews_router
-from routers.admin_messages import router as admin_messages_router
+from .auth import router as auth_router
+from .partners import router as partners_router
+from .catalog import router as catalog_router
+from .messages import router as messages_router, websocket_endpoint
+from .appointments import router as appointments_router
+from .admin import router as admin_router
+from .reviews import router as reviews_router
+from .admin_messages import router as admin_messages_router
 
 __all__ = [
     'auth_router',
