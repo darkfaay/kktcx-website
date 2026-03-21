@@ -228,8 +228,12 @@ async def create_appointment(
     if existing:
         raise HTTPException(status_code=400, detail="Time slot not available")
     
-    # Get duration details
-    durations = profile.get("duration_options", [])
+    # Get duration details - use defaults if not set
+    durations = profile.get("duration_options") or [
+        {"id": "30min", "label": "30 Dakika", "minutes": 30, "price": 100, "is_active": True},
+        {"id": "1hour", "label": "1 Saat", "minutes": 60, "price": 150, "is_active": True},
+        {"id": "2hour", "label": "2 Saat", "minutes": 120, "price": 250, "is_active": True}
+    ]
     duration = next((d for d in durations if d["id"] == data.duration_id), None)
     if not duration:
         raise HTTPException(status_code=400, detail="Invalid duration")
