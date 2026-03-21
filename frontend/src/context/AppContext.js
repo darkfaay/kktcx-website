@@ -330,7 +330,7 @@ export const useLanguage = () => {
 export const LanguageProvider = ({ children }) => {
   const [lang, setLang] = useState(() => {
     const path = window.location.pathname;
-    const match = path.match(/^\/(tr|en|ru|de)/);
+    const match = path.match(/^\/(tr|en|ru|de|el)/);
     return match ? match[1] : localStorage.getItem('lang') || 'tr';
   });
 
@@ -343,14 +343,14 @@ export const LanguageProvider = ({ children }) => {
     localStorage.setItem('lang', newLang);
     // Update URL
     const path = window.location.pathname;
-    const newPath = path.replace(/^\/(tr|en|ru|de)/, `/${newLang}`);
+    const newPath = path.replace(/^\/(tr|en|ru|de|el)/, `/${newLang}`);
     if (newPath !== path) {
       window.history.replaceState(null, '', newPath);
     }
   };
 
   return (
-    <LanguageContext.Provider value={{ lang, t, changeLang, languages: ['tr', 'en', 'ru', 'de'] }}>
+    <LanguageContext.Provider value={{ lang, t, changeLang, languages: ['tr', 'en', 'ru', 'de', 'el'] }}>
       {children}
     </LanguageContext.Provider>
   );

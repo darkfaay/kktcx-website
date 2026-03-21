@@ -182,7 +182,12 @@ KKTCX.com, Kuzey ve Güney Kıbrıs'a özel, sosyal eşlik hizmetleri platformud
 
 ## Son Güncellemeler (21 Mart 2026)
 - ✅ 18 Kıbrıs şehri eklendi (Kuzey + Güney)
-- ✅ Rumca dil desteği eklendi
+- ✅ Rumca dil desteği eklendi (Ελληνικά)
 - ✅ Yasal hizmet türleri güncellendi (eskort/jigolo kaldırıldı)
 - ✅ 10 yeni eşlik hizmet kategorisi eklendi
 - ✅ Şehirler bölgelerine göre gruplandırıldı
+- ✅ Ana sayfa filtreleri düzeltildi (cinsiyet/yönelim tekrarı kaldırıldı)
+- ✅ Hakkımızda sayfası modern tasarım ile yenilendi
+- ✅ İletişim sayfası modern tasarım ile yenilendi
+- ✅ Login sayfası modern ve mobil uyumlu tasarım
+- ✅ Register sayfası modern ve mobil uyumlu tasarım (Kullanıcı/Partner seçimi)

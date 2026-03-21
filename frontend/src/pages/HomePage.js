@@ -388,11 +388,11 @@ const HomePage = () => {
           </h1>
           
           <p className="text-lg md:text-xl text-white/60 mb-10 max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            Eskort, jigolo, masaj ve özel eşlik hizmetleri. 
+            Yemek eşliği, davet arkadaşlığı ve özel anlarınız için.
             Güvenli, gizli ve premium kalitede.
           </p>
 
-          {/* Quick Filter Tabs */}
+          {/* Quick Filter Tabs - Gender Selection */}
           <div className="flex flex-wrap justify-center gap-3 mb-8 animate-fade-in" style={{ animationDelay: '0.3s' }}>
             {['Tümü', 'Kadın', 'Erkek', 'Trans'].map((tab, idx) => (
               <button
@@ -405,17 +405,20 @@ const HomePage = () => {
             ))}
           </div>
 
-          {/* Search Box */}
-          <div className="glass max-w-5xl mx-auto rounded-2xl p-6 animate-slide-up" style={{ animationDelay: '0.4s' }}>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          {/* Search Box - Simplified */}
+          <div className="glass max-w-4xl mx-auto rounded-2xl p-6 animate-slide-up" style={{ animationDelay: '0.4s' }}>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Select value={searchCity || "all"} onValueChange={(v) => setSearchCity(v === "all" ? "" : v)}>
                 <SelectTrigger className="input-glass" data-testid="search-city">
                   <SelectValue placeholder="Şehir Seçin" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
                   <SelectItem value="all">Tüm Şehirler</SelectItem>
-                  {homeData?.cities?.map((city) => (
-                    <SelectItem key={city.id} value={city.id}>{city.name}</SelectItem>
+                  {homeData?.cities?.filter(c => c.region === 'north').map((city) => (
+                    <SelectItem key={city.id} value={city.id}>🔴 {city.name}</SelectItem>
+                  ))}
+                  {homeData?.cities?.filter(c => c.region === 'south').map((city) => (
+                    <SelectItem key={city.id} value={city.id}>🔵 {city.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -437,27 +440,14 @@ const HomePage = () => {
 
               <Select value={searchOrientation || "all"} onValueChange={(v) => setSearchOrientation(v === "all" ? "" : v)}>
                 <SelectTrigger className="input-glass" data-testid="search-orientation">
-                  <SelectValue placeholder="Cinsel Yönelim" />
+                  <SelectValue placeholder="Yönelim" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
-                  <SelectItem value="all">Tümü</SelectItem>
+                  <SelectItem value="all">Tüm Yönelimler</SelectItem>
                   <SelectItem value="heterosexual">Heteroseksüel</SelectItem>
                   <SelectItem value="lesbian">Lezbiyen</SelectItem>
                   <SelectItem value="gay">Gay</SelectItem>
                   <SelectItem value="bisexual">Biseksüel</SelectItem>
-                  <SelectItem value="trans">Trans</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={searchGender || "all"} onValueChange={(v) => setSearchGender(v === "all" ? "" : v)}>
-                <SelectTrigger className="input-glass" data-testid="search-gender">
-                  <SelectValue placeholder="Cinsiyet" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
-                  <SelectItem value="all">Tümü</SelectItem>
-                  <SelectItem value="female">Kadın</SelectItem>
-                  <SelectItem value="male">Erkek</SelectItem>
-                  <SelectItem value="trans">Trans</SelectItem>
                 </SelectContent>
               </Select>
 

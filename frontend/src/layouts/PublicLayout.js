@@ -23,7 +23,8 @@ const PublicLayout = () => {
     tr: 'Türkçe',
     en: 'English',
     ru: 'Русский',
-    de: 'Deutsch'
+    de: 'Deutsch',
+    el: 'Ελληνικά'
   };
 
   const handleLogout = () => {
