@@ -78,9 +78,10 @@ const PartnerCard = ({ profile, lang, onFavorite }) => {
     }
   };
 
-  const coverImage = profile.cover_image?.path 
-    ? `${API_URL}/api/files/${profile.cover_image.path}`
-    : 'https://images.unsplash.com/photo-1590659163722-88a80a7ff913?w=400&h=600&fit=crop';
+  const coverImage = profile.photo_url 
+    || (profile.cover_image?.path 
+      ? `${API_URL}/api/files/${profile.cover_image.path}`
+      : 'https://images.unsplash.com/photo-1590659163722-88a80a7ff913?w=400&h=600&fit=crop');
 
   const isBlurred = profile.cover_image?.is_blurred;
 

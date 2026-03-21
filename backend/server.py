@@ -1412,6 +1412,28 @@ async def admin_toggle_verified(profile_id: str, is_verified: bool, admin: dict 
     )
     return {"success": True}
 
+@api_router.put("/admin/profiles/{profile_id}/photo")
+async def admin_update_profile_photo(profile_id: str, data: Dict[str, Any], admin: dict = Depends(require_admin)):
+    """Update profile photo URL"""
+    photo_url = data.get("photo_url")
+    cover_url = data.get("cover_url")
+    gallery = data.get("gallery", [])
+    
+    updates = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    if photo_url:
+        updates["photo_url"] = photo_url
+    if cover_url:
+        updates["cover_url"] = cover_url
+    if gallery:
+        updates["gallery"] = gallery
+    
+    await db.partner_profiles.update_one(
+        {"id": profile_id},
+        {"$set": updates}
+    )
+    return {"success": True}
+
 # ==================== MEDIA MANAGEMENT ====================
 
 @api_router.get("/admin/media")

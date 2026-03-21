@@ -173,18 +173,26 @@ const PartnerDetailPage = () => {
     return null;
   }
 
-  const coverImage = profile.cover_image?.path 
-    ? `${API_URL}/api/files/${profile.cover_image.path}`
-    : profile.images?.[0]?.path 
-      ? `${API_URL}/api/files/${profile.images[0].path}`
-      : 'https://images.unsplash.com/photo-1590659163722-88a80a7ff913?w=1200&h=600&fit=crop';
+  const coverImage = profile.cover_url 
+    || (profile.cover_image?.path 
+      ? `${API_URL}/api/files/${profile.cover_image.path}`
+      : profile.images?.[0]?.path 
+        ? `${API_URL}/api/files/${profile.images[0].path}`
+        : 'https://images.unsplash.com/photo-1590659163722-88a80a7ff913?w=1200&h=600&fit=crop');
 
-  const images = profile.images?.length > 0 
-    ? profile.images.map(img => ({
-        url: `${API_URL}/api/files/${img.path}`,
-        isBlurred: img.is_blurred
-      }))
-    : [{ url: 'https://images.unsplash.com/photo-1590659163722-88a80a7ff913?w=800&h=1200&fit=crop', isBlurred: false }];
+  const profilePhoto = profile.photo_url 
+    || (profile.cover_image?.path 
+      ? `${API_URL}/api/files/${profile.cover_image.path}`
+      : 'https://images.unsplash.com/photo-1590659163722-88a80a7ff913?w=400&h=400&fit=crop');
+
+  const images = profile.gallery?.length > 0 
+    ? profile.gallery.map(url => ({ url, isBlurred: false }))
+    : profile.images?.length > 0 
+      ? profile.images.map(img => ({
+          url: `${API_URL}/api/files/${img.path}`,
+          isBlurred: img.is_blurred
+        }))
+      : [{ url: profilePhoto, isBlurred: false }];
 
   return (
     <div className="min-h-screen pb-24 md:pb-0" data-testid="partner-detail-page">
@@ -278,9 +286,9 @@ const PartnerDetailPage = () => {
               <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl border-4 border-[#0A0A0F] overflow-hidden shadow-2xl cursor-pointer"
                    onClick={() => openLightbox(0)}>
                 <img 
-                  src={images[0].url}
+                  src={profilePhoto}
                   alt={profile.nickname}
-                  className={`w-full h-full object-cover ${images[0].isBlurred ? 'blur-lg' : ''}`}
+                  className="w-full h-full object-cover"
                 />
               </div>
               
