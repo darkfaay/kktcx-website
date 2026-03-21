@@ -28,35 +28,21 @@ import PageBanner from '../components/PageBanner';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
-// New legal service types
-const serviceTypeLabels = {
-  'dinner-companion': 'Yemek Eşliği',
-  'event-companion': 'Davet Eşliği',
-  'sleep-companion': 'Uyku Arkadaşlığı',
-  'gf-bf-experience': 'Sevgili Deneyimi',
-  'spouse-roleplay': 'Eş Rolleri',
-  'travel-companion': 'Gezi Eşliği',
-  'social-event': 'Sosyal Etkinlik',
-  'business-event': 'İş Daveti',
-  'culture-arts': 'Kültür & Sanat',
-  'sports-fitness': 'Spor & Fitness'
+// Service type keys for translation
+const serviceTypeKeys = {
+  'dinner-companion': 'dinnerCompanion',
+  'event-companion': 'eventCompanion',
+  'sleep-companion': 'sleepCompanion',
+  'gf-bf-experience': 'gfBfExperience',
+  'spouse-roleplay': 'spouseRoleplay',
+  'travel-companion': 'travelCompanion',
+  'social-event': 'socialEvent',
+  'business-event': 'businessEvent',
+  'culture-arts': 'cultureArts',
+  'sports-fitness': 'sportsFitness'
 };
 
-const orientationLabels = {
-  heterosexual: 'Heteroseksüel',
-  lesbian: 'Lezbiyen',
-  gay: 'Gay',
-  bisexual: 'Biseksüel',
-  trans: 'Trans'
-};
-
-const genderLabels = {
-  female: 'Kadın',
-  male: 'Erkek',
-  trans: 'Trans'
-};
-
-const PartnerCard = ({ profile, lang, onFavorite }) => {
+const PartnerCard = ({ profile, lang, t, onFavorite }) => {
   const navigate = useNavigate();
   const { user, api } = useAuth();
   const [isFavorited, setIsFavorited] = useState(profile.is_favorited);
@@ -136,7 +122,7 @@ const PartnerCard = ({ profile, lang, onFavorite }) => {
           )}
           {profile.gender && (
             <span className={`px-2 py-0.5 rounded-full text-xs font-medium badge-${profile.gender}`}>
-              {genderLabels[profile.gender]}
+              {t(profile.gender)}
             </span>
           )}
         </div>
@@ -167,7 +153,7 @@ const PartnerCard = ({ profile, lang, onFavorite }) => {
             <div className="flex flex-wrap gap-1 mt-2">
               {profile.service_types.slice(0, 2).map((type) => (
                 <span key={type} className="text-xs px-2 py-0.5 rounded-full bg-[#E91E63]/20 text-[#FF6090]">
-                  {serviceTypeLabels[type] || type}
+                  {t(serviceTypeKeys[type]) || type}
                 </span>
               ))}
             </div>
@@ -215,7 +201,6 @@ const PartnersPage = () => {
     category_id: searchParams.get('category') || '',
     gender: searchParams.get('gender') || '',
     service_type: searchParams.get('service') || '',
-    orientation: searchParams.get('orientation') || '',
     min_age: parseInt(searchParams.get('min_age')) || 18,
     max_age: parseInt(searchParams.get('max_age')) || 60,
     available_today: searchParams.get('available_today') === 'true',
@@ -269,7 +254,6 @@ const PartnersPage = () => {
       if (filters.category_id) params.append('category_id', filters.category_id);
       if (filters.gender) params.append('gender', filters.gender);
       if (filters.service_type) params.append('service_type', filters.service_type);
-      if (filters.orientation) params.append('orientation', filters.orientation);
       if (filters.min_age > 18) params.append('min_age', filters.min_age);
       if (filters.max_age < 60) params.append('max_age', filters.max_age);
       if (filters.available_today) params.append('available_today', 'true');
@@ -300,7 +284,6 @@ const PartnersPage = () => {
       category_id: '',
       gender: '',
       service_type: '',
-      orientation: '',
       min_age: 18,
       max_age: 60,
       available_today: false,
@@ -319,7 +302,6 @@ const PartnersPage = () => {
     filters.category_id,
     filters.gender,
     filters.service_type,
-    filters.orientation,
     filters.min_age > 18,
     filters.max_age < 60,
     filters.available_today,
@@ -334,53 +316,32 @@ const PartnersPage = () => {
     <div className="space-y-6">
       {/* Gender */}
       <div>
-        <label className="text-white/70 text-sm mb-2 block">Cinsiyet</label>
+        <label className="text-white/70 text-sm mb-2 block">{t('gender')}</label>
         <Select value={filters.gender || "all"} onValueChange={(v) => updateFilter('gender', v === "all" ? "" : v)}>
           <SelectTrigger className="input-glass">
-            <SelectValue placeholder="Tümü" />
+            <SelectValue placeholder={t('all')} />
           </SelectTrigger>
           <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
-            <SelectItem value="all">Tümü</SelectItem>
-            <SelectItem value="female">Kadın</SelectItem>
-            <SelectItem value="male">Erkek</SelectItem>
-            <SelectItem value="trans">Trans</SelectItem>
+            <SelectItem value="all">{t('all')}</SelectItem>
+            <SelectItem value="female">{t('female')}</SelectItem>
+            <SelectItem value="male">{t('male')}</SelectItem>
+            <SelectItem value="trans">{t('trans')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {/* Service Type */}
       <div>
-        <label className="text-white/70 text-sm mb-2 block">Hizmet Türü</label>
+        <label className="text-white/70 text-sm mb-2 block">{t('serviceType')}</label>
         <Select value={filters.service_type || "all"} onValueChange={(v) => updateFilter('service_type', v === "all" ? "" : v)}>
           <SelectTrigger className="input-glass">
-            <SelectValue placeholder="Tümü" />
+            <SelectValue placeholder={t('all')} />
           </SelectTrigger>
           <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
-            <SelectItem value="all">Tümü</SelectItem>
-            <SelectItem value="dinner-companion">Yemek Eşliği</SelectItem>
-            <SelectItem value="event-companion">Davet Eşliği</SelectItem>
-            <SelectItem value="gf-bf-experience">Sevgili Deneyimi</SelectItem>
-            <SelectItem value="sleep-companion">Uyku Arkadaşlığı</SelectItem>
-            <SelectItem value="spouse-roleplay">Eş Rolleri</SelectItem>
-            <SelectItem value="travel-companion">Gezi Eşliği</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Orientation */}
-      <div>
-        <label className="text-white/70 text-sm mb-2 block">Cinsel Yönelim</label>
-        <Select value={filters.orientation || "all"} onValueChange={(v) => updateFilter('orientation', v === "all" ? "" : v)}>
-          <SelectTrigger className="input-glass">
-            <SelectValue placeholder="Tümü" />
-          </SelectTrigger>
-          <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
-            <SelectItem value="all">Tümü</SelectItem>
-            <SelectItem value="heterosexual">Heteroseksüel</SelectItem>
-            <SelectItem value="lesbian">Lezbiyen</SelectItem>
-            <SelectItem value="gay">Gay</SelectItem>
-            <SelectItem value="bisexual">Biseksüel</SelectItem>
-            <SelectItem value="trans">Trans</SelectItem>
+            <SelectItem value="all">{t('all')}</SelectItem>
+            {Object.entries(serviceTypeKeys).map(([value, key]) => (
+              <SelectItem key={value} value={value}>{t(key)}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -390,10 +351,10 @@ const PartnersPage = () => {
         <label className="text-white/70 text-sm mb-2 block">{t('city')}</label>
         <Select value={filters.city_id || "all"} onValueChange={(v) => updateFilter('city_id', v === "all" ? "" : v)}>
           <SelectTrigger className="input-glass">
-            <SelectValue placeholder="Tüm Şehirler" />
+            <SelectValue placeholder={t('allCities')} />
           </SelectTrigger>
           <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
-            <SelectItem value="all">Tüm Şehirler</SelectItem>
+            <SelectItem value="all">{t('allCities')}</SelectItem>
             {cities.map((city) => (
               <SelectItem key={city.id} value={city.id}>{city.name}</SelectItem>
             ))}
@@ -406,10 +367,10 @@ const PartnersPage = () => {
         <label className="text-white/70 text-sm mb-2 block">{t('category')}</label>
         <Select value={filters.category_id || "all"} onValueChange={(v) => updateFilter('category_id', v === "all" ? "" : v)}>
           <SelectTrigger className="input-glass">
-            <SelectValue placeholder="Tüm Kategoriler" />
+            <SelectValue placeholder={t('allCategories')} />
           </SelectTrigger>
           <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
-            <SelectItem value="all">Tüm Kategoriler</SelectItem>
+            <SelectItem value="all">{t('allCategories')}</SelectItem>
             {categories.map((cat) => (
               <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
             ))}
@@ -469,14 +430,14 @@ const PartnersPage = () => {
             checked={filters.incall}
             onCheckedChange={(v) => updateFilter('incall', v)}
           />
-          <span className="text-white/70">Ev (Incall)</span>
+          <span className="text-white/70">{t('incall')}</span>
         </label>
         <label className="flex items-center gap-3 cursor-pointer">
           <Checkbox 
             checked={filters.outcall}
             onCheckedChange={(v) => updateFilter('outcall', v)}
           />
-          <span className="text-white/70">Dışarı (Outcall)</span>
+          <span className="text-white/70">{t('outcall')}</span>
         </label>
       </div>
 
@@ -488,7 +449,7 @@ const PartnersPage = () => {
           onClick={clearFilters}
         >
           <X className="w-4 h-4 mr-2" />
-          Filtreleri Temizle ({activeFiltersCount})
+          {t('clearFilters')} ({activeFiltersCount})
         </Button>
       )}
     </div>
@@ -505,7 +466,7 @@ const PartnersPage = () => {
         <h1 className="text-3xl md:text-4xl font-bold text-white font-serif">
           {citySlug ? cities.find(c => c.slug === citySlug)?.name : t('allPartners')}
         </h1>
-        <p className="text-white/60 mt-2">{total} partner bulundu</p>
+        <p className="text-white/60 mt-2">{total} {t('partnersFound')}</p>
       </div>
 
       {/* Top Bar - Mobile Filter + Sort */}
@@ -585,7 +546,7 @@ const PartnersPage = () => {
             <>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 stagger-children">
                 {profiles.map((profile) => (
-                  <PartnerCard key={profile.id} profile={profile} lang={lang} />
+                  <PartnerCard key={profile.id} profile={profile} lang={lang} t={t} />
                 ))}
               </div>
 

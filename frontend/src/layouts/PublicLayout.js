@@ -47,6 +47,13 @@ const PublicLayout = () => {
             {/* Navigation */}
             <nav className="flex items-center gap-6">
               <Link 
+                to={`/${lang}`} 
+                className="text-white/70 hover:text-[#D4AF37] transition-colors"
+                data-testid="nav-home"
+              >
+                {t('home')}
+              </Link>
+              <Link 
                 to={`/${lang}/partnerler`} 
                 className="text-white/70 hover:text-[#D4AF37] transition-colors"
                 data-testid="nav-partners"

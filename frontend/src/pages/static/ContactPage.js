@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { toast } from 'sonner';
+import PageBanner from '../../components/PageBanner';
 
 const ContactPage = () => {
   const { t } = useLanguage();
@@ -75,8 +76,11 @@ const ContactPage = () => {
 
   return (
     <div className="min-h-screen">
+      {/* Page Banner */}
+      <PageBanner showText={false} height="h-[160px] md:h-[200px]" />
+      
       {/* Hero Section */}
-      <section className="relative py-20 md:py-32 overflow-hidden">
+      <section className="relative py-12 md:py-20 overflow-hidden">
         {/* Background Effects */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#E91E63]/10 via-transparent to-transparent"></div>
         <div className="absolute top-20 right-1/4 w-96 h-96 bg-[#E91E63]/10 rounded-full blur-[150px]"></div>

@@ -24,12 +24,14 @@ const MessagesPage = () => {
 
   useEffect(() => {
     fetchConversations();
-    
-    // If new message to user, start conversation
-    if (newMessageUserId) {
+  }, []);
+
+  useEffect(() => {
+    // If new message to user, start conversation after conversations are loaded
+    if (newMessageUserId && !loading) {
       startNewConversation(newMessageUserId);
     }
-  }, []);
+  }, [newMessageUserId, loading, conversations]);
 
   const fetchConversations = async () => {
     try {
@@ -45,14 +47,14 @@ const MessagesPage = () => {
   const startNewConversation = async (userId) => {
     // Find existing conversation or create a placeholder
     const existing = conversations.find(c => 
-      c.participants.includes(userId) || c.other_user?.id === userId
+      c.participants?.includes(userId) || c.other_user?.id === userId
     );
     
     if (existing) {
-      navigate(`${location.pathname}/${existing.id}`);
+      navigate(`/${lang}/kullanici/mesajlar/${existing.id}`, { replace: true });
     } else {
       // Navigate with the user ID to start new conversation
-      navigate(`${location.pathname}/new?user=${userId}`);
+      navigate(`/${lang}/kullanici/mesajlar/new?user=${userId}`, { replace: true });
     }
   };
 

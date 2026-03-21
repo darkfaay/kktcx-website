@@ -421,10 +421,7 @@ const HomePage = () => {
           
           {/* Main Title with sexy gradient */}
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 font-serif animate-slide-up">
-            <span className="gradient-text hero-text-shadow">Tutku</span>
-            <span className="text-white">nun</span>
-            <br />
-            <span className="text-white">Adresi</span>
+            <span className="gradient-text hero-text-shadow">Tutkunun Adresi</span>
           </h1>
           
           {/* Subtitle */}

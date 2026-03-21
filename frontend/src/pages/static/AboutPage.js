@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '../../context/AppContext';
 import { Shield, Users, Heart, Star, Award, Sparkles, CheckCircle, ArrowRight, Globe, Lock, Clock } from 'lucide-react';
 import { Button } from '../../components/ui/button';
+import PageBanner from '../../components/PageBanner';
 
 const AboutPage = () => {
   const { lang, t } = useLanguage();
@@ -52,8 +53,11 @@ const AboutPage = () => {
 
   return (
     <div className="min-h-screen">
+      {/* Page Banner */}
+      <PageBanner showText={false} height="h-[160px] md:h-[200px]" />
+      
       {/* Hero Section */}
-      <section className="relative py-20 md:py-32 overflow-hidden">
+      <section className="relative py-12 md:py-20 overflow-hidden">
         {/* Background Effects */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#E91E63]/10 via-transparent to-transparent"></div>
         <div className="absolute top-20 left-1/4 w-96 h-96 bg-[#E91E63]/10 rounded-full blur-[150px]"></div>
