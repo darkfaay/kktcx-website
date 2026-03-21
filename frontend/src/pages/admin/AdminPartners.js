@@ -174,8 +174,17 @@ const AdminPartners = () => {
     if (profile.cover_image?.path) {
       return `${API_URL}/api/files/${profile.cover_image.path}`;
     }
+    if (profile.cover_image?.url) {
+      return profile.cover_image.url;
+    }
     if (profile.images?.length > 0) {
-      return `${API_URL}/api/files/${profile.images[0].path}`;
+      const firstImage = profile.images[0];
+      if (firstImage.path) {
+        return `${API_URL}/api/files/${firstImage.path}`;
+      }
+      if (firstImage.url) {
+        return firstImage.url;
+      }
     }
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.nickname || 'P')}&background=D4AF37&color=000&size=80`;
   };
