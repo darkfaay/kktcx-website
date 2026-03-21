@@ -72,7 +72,33 @@ async def get_public_settings():
     settings = {}
     async for s in db.settings.find({}, {"_id": 0}):
         settings[s["key"]] = s.get("value", {})
+    
+    # Default values if not set
+    if "general" not in settings:
+        settings["general"] = {"site_name": "KKTCX", "maintenance_mode": False}
+    if "homepage" not in settings:
+        settings["homepage"] = {"hero_title": "KKTCX", "show_vitrin": True, "vitrin_count": 6}
+    if "social" not in settings:
+        settings["social"] = {"instagram": "", "twitter": "", "telegram": ""}
+    if "branding" not in settings:
+        settings["branding"] = {"logo_url": "", "favicon_url": "", "primary_color": "#E91E63"}
+    
     return settings
+
+# Get SEO settings
+@app.get("/api/seo")
+async def get_seo_settings(page: str = "home", lang: str = "tr"):
+    seo = await db.seo.find_one({"page": page, "lang": lang}, {"_id": 0})
+    if not seo:
+        # Default SEO
+        seo = {
+            "page": page,
+            "lang": lang,
+            "title": "KKTCX | Kıbrıs Eskort, Partner",
+            "description": "Kıbrıs eskort, jigolo, masaj ve partner ilanları.",
+            "keywords": "kıbrıs eskort, kıbrıs escort"
+        }
+    return seo
 
 # Get partners
 @app.get("/api/partners")
