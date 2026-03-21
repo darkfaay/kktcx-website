@@ -1,7 +1,7 @@
 """
 Admin Routes
 """
-from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
+from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File, Request
 from typing import Optional, List
 from datetime import datetime, timezone, timedelta
 import uuid
@@ -422,14 +422,19 @@ async def get_setting(key: str, admin: dict = Depends(require_admin)):
 
 
 @router.put("/settings/{key}")
-async def update_setting(key: str, value: str, admin: dict = Depends(require_admin)):
-    """Update a setting"""
-    await db.settings.update_one(
-        {"key": key},
-        {"$set": {"value": value, "updated_at": datetime.now(timezone.utc).isoformat()}},
-        upsert=True
-    )
-    return {"success": True}
+async def update_setting(key: str, request: Request, admin: dict = Depends(require_admin)):
+    """Update a setting - accepts any JSON value"""
+    try:
+        body = await request.json()
+        # body could be a dict/object or a simple value
+        await db.settings.update_one(
+            {"key": key},
+            {"$set": {"key": key, "value": body, "updated_at": datetime.now(timezone.utc).isoformat()}},
+            upsert=True
+        )
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # ==================== CONTENT MANAGEMENT ====================

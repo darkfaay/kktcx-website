@@ -594,4 +594,61 @@ export const LanguageProvider = ({ children }) => {
   );
 };
 
-export default { AuthProvider, LanguageProvider, useAuth, useLanguage };
+// Site Settings Context
+const SiteSettingsContext = createContext(null);
+
+export const useSiteSettings = () => {
+  const context = useContext(SiteSettingsContext);
+  return context || { features: {}, loading: true };
+};
+
+export const SiteSettingsProvider = ({ children }) => {
+  const [settings, setSettings] = useState({
+    features: {
+      messaging_enabled: true,
+      favorites_enabled: true,
+      reviews_enabled: false,
+      booking_enabled: false,
+      payment_enabled: true,
+      sms_notifications: false,
+      email_notifications: true,
+    },
+    homepage: {},
+    general: {},
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/settings/public`);
+      if (response.data) {
+        setSettings(prev => ({
+          ...prev,
+          features: response.data.features || prev.features,
+          homepage: response.data.homepage || prev.homepage,
+          general: response.data.general || prev.general,
+        }));
+      }
+    } catch (error) {
+      console.log('Using default settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isFeatureEnabled = (feature) => {
+    return settings.features?.[feature] ?? true;
+  };
+
+  return (
+    <SiteSettingsContext.Provider value={{ settings, features: settings.features, loading, isFeatureEnabled }}>
+      {children}
+    </SiteSettingsContext.Provider>
+  );
+};
+
+export default { AuthProvider, LanguageProvider, SiteSettingsProvider, useAuth, useLanguage, useSiteSettings };

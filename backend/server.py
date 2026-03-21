@@ -88,6 +88,16 @@ async def health():
     return {"status": "healthy"}
 
 
+@app.get("/api/settings/public")
+async def get_public_settings():
+    """Get public site settings (no auth required)"""
+    settings = await db.settings.find({}, {"_id": 0}).to_list(100)
+    result = {}
+    for s in settings:
+        result[s["key"]] = s["value"]
+    return result
+
+
 # ==================== FILE SERVING ====================
 
 @app.get("/api/files/{path:path}")
