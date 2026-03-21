@@ -3,9 +3,19 @@ KKTCX Database Connection
 """
 from motor.motor_asyncio import AsyncIOMotorClient
 from config import MONGO_URL, DB_NAME
+import logging
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+if not MONGO_URL:
+    logger.error("MONGO_URL environment variable is not set!")
+    raise ValueError("MONGO_URL environment variable is required")
+
+logger.info(f"Connecting to MongoDB: {DB_NAME}")
 client = AsyncIOMotorClient(MONGO_URL)
 db = client[DB_NAME]
+logger.info("MongoDB client initialized")
 
 async def init_indexes():
     """Create database indexes"""

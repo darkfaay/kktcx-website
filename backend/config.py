@@ -3,14 +3,21 @@ KKTCX Backend Configuration
 """
 import os
 from pathlib import Path
-from dotenv import load_dotenv
 
 ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
+
+# Try to load .env file if exists (development)
+try:
+    from dotenv import load_dotenv
+    env_file = ROOT_DIR / '.env'
+    if env_file.exists():
+        load_dotenv(env_file)
+except ImportError:
+    pass
 
 # Database
 MONGO_URL = os.environ.get('MONGO_URL')
-DB_NAME = os.environ.get('DB_NAME')
+DB_NAME = os.environ.get('DB_NAME', 'kktcx')
 
 # JWT
 JWT_SECRET = os.environ.get('JWT_SECRET', 'default_secret')
