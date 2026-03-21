@@ -19,7 +19,7 @@ router = APIRouter(prefix="/admin", tags=["Admin"])
 @router.get("/dashboard")
 async def get_dashboard(admin: dict = Depends(require_admin)):
     """Get admin dashboard stats"""
-    total_users = await db.users.count_documents({"role": {"$ne": "partner"}})
+    total_users = await db.users.count_documents({})  # Tüm kullanıcılar (partner dahil)
     total_partners = await db.users.count_documents({"role": "partner"})
     total_profiles = await db.partner_profiles.count_documents({})
     pending_profiles = await db.partner_profiles.count_documents({"status": "pending"})
