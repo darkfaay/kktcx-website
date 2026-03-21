@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, LanguageProvider, useAuth } from './context/AppContext';
 import { Toaster } from './components/ui/sonner';
+import AgeVerification from './components/AgeVerification';
 
 // Layouts
 import PublicLayout from './layouts/PublicLayout';
@@ -152,6 +153,7 @@ function App() {
     <BrowserRouter>
       <LanguageProvider>
         <AuthProvider>
+          <AgeVerification />
           <AppRoutes />
           <Toaster position="top-right" richColors />
         </AuthProvider>

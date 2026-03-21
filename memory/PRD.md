@@ -191,3 +191,10 @@ KKTCX.com, Kuzey ve Güney Kıbrıs'a özel, sosyal eşlik hizmetleri platformud
 - ✅ İletişim sayfası modern tasarım ile yenilendi
 - ✅ Login sayfası modern ve mobil uyumlu tasarım
 - ✅ Register sayfası modern ve mobil uyumlu tasarım (Kullanıcı/Partner seçimi)
+- ✅ **+18 Yaş Doğrulama Popup'ı** - Yasal uyarı ile site girişinde görünür
+- ✅ **Ana Sayfa Yeniden Tasarlandı** - Daha seksi, modern ve erotik görünüm:
+  - "Tutkunun Adresi" başlığı (gradient text)
+  - Animasyonlu arka plan orb'ları
+  - Sexy card hover efektleri
+  - Emoji'li cinsiyet butonları
+  - Premium VIP kartları için glow animasyonları
