@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, useLanguage } from '../../context/AppContext';
 import { 
   Save, Send, MapPin, Globe, User, Heart, Sparkles, Phone, 
   Check, ChevronRight, ChevronLeft, Camera, Ruler, Eye, 
-  Palette, Users, Crown, Clock, Home, Car, MessageCircle
+  Palette, Users, Crown, Clock, Home, Car, MessageCircle,
+  Upload, Image, Trash2, Star, Loader2, ImagePlus
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -108,12 +109,14 @@ const steps = [
   { id: 2, title: 'Hizmetler', icon: Sparkles, desc: 'Sunduğunuz hizmetler' },
   { id: 3, title: 'Görünüm', icon: Eye, desc: 'Fiziksel özellikleriniz' },
   { id: 4, title: 'Detaylar', icon: Heart, desc: 'Fiyat ve iletişim' },
+  { id: 5, title: 'Fotoğraf', icon: Camera, desc: 'Profil fotoğrafınız' },
 ];
 
 const PartnerProfileEdit = () => {
   const { user, api } = useAuth();
   const { lang, t } = useLanguage();
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
   
   const [profile, setProfile] = useState(null);
   const [cities, setCities] = useState([]);
@@ -122,6 +125,8 @@ const PartnerProfileEdit = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [uploadedImages, setUploadedImages] = useState([]);
+  const [uploading, setUploading] = useState(false);
 
   const [formData, setFormData] = useState({
     nickname: '',
@@ -172,6 +177,7 @@ const PartnerProfileEdit = () => {
       try {
         const profileRes = await api.get('/partner/profile');
         setProfile(profileRes.data);
+        setUploadedImages(profileRes.data.images || []);
         setFormData({
           nickname: profileRes.data.nickname || '',
           age: profileRes.data.age || '',
@@ -264,6 +270,12 @@ const PartnerProfileEdit = () => {
       return;
     }
 
+    if (uploadedImages.length === 0) {
+      toast.error('En az 1 fotoğraf yüklemeniz gerekiyor');
+      setCurrentStep(5);
+      return;
+    }
+
     setSaving(true);
     try {
       const dataToSend = {
@@ -289,6 +301,107 @@ const PartnerProfileEdit = () => {
     }
   };
 
+  // Photo upload functions
+  const handleFileSelect = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    const maxFiles = 10 - uploadedImages.length;
+    if (files.length > maxFiles) {
+      toast.error(`En fazla ${maxFiles} fotoğraf daha yükleyebilirsiniz.`);
+      return;
+    }
+
+    // First save the profile if it doesn't exist
+    if (!profile) {
+      if (!formData.nickname || !formData.age) {
+        toast.error('Önce temel bilgileri doldurun');
+        setCurrentStep(1);
+        return;
+      }
+      
+      try {
+        const dataToSend = {
+          ...formData,
+          age: parseInt(formData.age) || 18,
+          height: parseInt(formData.height) || null,
+          hourly_rate: parseFloat(formData.hourly_rate) || null
+        };
+        const res = await api.post('/partner/profile', dataToSend);
+        setProfile(res.data.profile);
+      } catch (error) {
+        toast.error('Profil kaydedilemedi: ' + (error.response?.data?.detail || 'Hata'));
+        return;
+      }
+    }
+
+    setUploading(true);
+    let uploaded = 0;
+    
+    for (const file of files) {
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        toast.error(`${file.name}: Geçersiz dosya türü`);
+        continue;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`${file.name}: Dosya çok büyük (max 10MB)`);
+        continue;
+      }
+
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', file);
+      formDataUpload.append('is_cover', uploadedImages.length === 0 && uploaded === 0);
+      formDataUpload.append('is_blurred', false);
+
+      try {
+        await api.post('/partner/upload-image', formDataUpload, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        uploaded++;
+        toast.success(`${file.name} yüklendi`);
+      } catch (error) {
+        toast.error(`${file.name}: Yükleme başarısız`);
+      }
+    }
+
+    // Refresh images
+    try {
+      const profileRes = await api.get('/partner/profile');
+      setProfile(profileRes.data);
+      setUploadedImages(profileRes.data.images || []);
+    } catch (e) {}
+
+    setUploading(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteImage = async (imageId) => {
+    if (!window.confirm('Bu fotoğrafı silmek istediğinize emin misiniz?')) return;
+
+    try {
+      await api.delete(`/partner/images/${imageId}`);
+      setUploadedImages(prev => prev.filter(img => img.id !== imageId));
+      toast.success('Fotoğraf silindi');
+    } catch (error) {
+      toast.error('Silme başarısız');
+    }
+  };
+
+  const handleSetCover = async (imageId) => {
+    try {
+      await api.put(`/partner/images/${imageId}/cover`);
+      // Refresh images
+      const profileRes = await api.get('/partner/profile');
+      setUploadedImages(profileRes.data.images || []);
+      toast.success('Profil fotoğrafı güncellendi');
+    } catch (error) {
+      toast.error('Güncelleme başarısız');
+    }
+  };
+
   const getStepProgress = () => {
     let filled = 0;
     let total = 0;
@@ -310,6 +423,10 @@ const PartnerProfileEdit = () => {
     
     // Step 4: Details
     if (formData.short_description) filled++;
+    total += 1;
+    
+    // Step 5: Photos (required)
+    if (uploadedImages.length > 0) filled++;
     total += 1;
     
     return Math.round((filled / total) * 100);
@@ -340,7 +457,7 @@ const PartnerProfileEdit = () => {
             <h1 className="text-2xl md:text-3xl font-bold text-white font-serif">
               {profile ? 'Profili Düzenle' : 'Partner Profilinizi Oluşturun'}
             </h1>
-            <p className="text-white/50 text-sm">Adım {currentStep}/4 - {steps[currentStep - 1].desc}</p>
+            <p className="text-white/50 text-sm">Adım {currentStep}/5 - {steps[currentStep - 1].desc}</p>
           </div>
         </div>
         
@@ -893,6 +1010,180 @@ const PartnerProfileEdit = () => {
           </div>
         )}
 
+        {/* Step 5: Photos */}
+        {currentStep === 5 && (
+          <div className="space-y-6 animate-fadeIn">
+            <div className="glass-gold rounded-2xl p-6 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#D4AF37]/10 to-transparent rounded-full blur-2xl"></div>
+              
+              <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#D4AF37]/20 flex items-center justify-center">
+                  <Camera className="w-5 h-5 text-[#D4AF37]" />
+                </div>
+                Profil Fotoğrafı <span className="text-[#D4AF37]">*</span>
+              </h3>
+              <p className="text-white/50 text-sm mb-6 ml-13">
+                En az 1 fotoğraf yüklemeniz zorunludur. İlk yüklediğiniz fotoğraf profil fotoğrafınız olacaktır.
+              </p>
+              
+              {/* Upload Area */}
+              <div className="mb-6">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  className="hidden"
+                  data-testid="photo-upload-input"
+                />
+                
+                <div 
+                  onClick={() => !uploading && fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+                    uploading 
+                      ? 'border-[#D4AF37]/50 bg-[#D4AF37]/5' 
+                      : 'border-white/20 hover:border-[#D4AF37]/50 hover:bg-white/5'
+                  }`}
+                >
+                  {uploading ? (
+                    <div className="flex flex-col items-center gap-3">
+                      <Loader2 className="w-12 h-12 text-[#D4AF37] animate-spin" />
+                      <p className="text-white">Yükleniyor...</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center">
+                        <Upload className="w-8 h-8 text-white/40" />
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">Fotoğraf yüklemek için tıklayın</p>
+                        <p className="text-white/50 text-sm mt-1">JPG, PNG veya WebP (max 10MB)</p>
+                      </div>
+                      <Button 
+                        type="button"
+                        className="btn-primary mt-2"
+                        data-testid="upload-photo-btn"
+                      >
+                        <ImagePlus className="w-4 h-4 mr-2" />
+                        Fotoğraf Seç
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Uploaded Images Grid */}
+              {uploadedImages.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-white font-medium">Yüklenen Fotoğraflar ({uploadedImages.length}/10)</h4>
+                    {uploadedImages.length >= 1 && (
+                      <span className="text-emerald-400 text-sm flex items-center gap-1">
+                        <Check className="w-4 h-4" />
+                        Zorunlu fotoğraf yüklendi
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {uploadedImages.map((image, index) => {
+                      const imageUrl = image.url || `${API_URL}/api/files/${image.path}`;
+                      const isCover = index === 0 || image.is_cover || (profile?.cover_image?.id === image.id);
+                      
+                      return (
+                        <div 
+                          key={image.id || index}
+                          className={`group relative aspect-[3/4] rounded-xl overflow-hidden ${
+                            isCover ? 'ring-2 ring-[#D4AF37]' : ''
+                          }`}
+                        >
+                          <img 
+                            src={imageUrl}
+                            alt={`Fotoğraf ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          
+                          {/* Overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-3">
+                            <div className="flex gap-2">
+                              {!isCover && (
+                                <Button
+                                  size="sm"
+                                  className="flex-1 h-8 text-xs bg-[#D4AF37] hover:bg-[#F3E5AB] text-black"
+                                  onClick={() => handleSetCover(image.id)}
+                                >
+                                  <Star className="w-3 h-3 mr-1" />
+                                  Profil Yap
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 text-xs border-red-500/50 text-red-400 hover:bg-red-500/20"
+                                onClick={() => handleDeleteImage(image.id)}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          {/* Cover Badge */}
+                          {isCover && (
+                            <div className="absolute top-2 left-2">
+                              <div className="px-2 py-1 rounded-full bg-[#D4AF37] text-black text-[10px] font-semibold flex items-center gap-1">
+                                <Star className="w-3 h-3" />
+                                Profil
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              
+              {/* Warning if no photos */}
+              {uploadedImages.length === 0 && (
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                  <Camera className="w-6 h-6 text-amber-400 shrink-0" />
+                  <div>
+                    <p className="text-amber-400 font-medium">Fotoğraf Zorunludur</p>
+                    <p className="text-white/60 text-sm">Profilinizi onaya göndermek için en az 1 fotoğraf yüklemelisiniz.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Tips */}
+            <div className="glass rounded-2xl p-5 border border-white/10">
+              <h4 className="text-white font-medium mb-3 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-[#D4AF37]" />
+                Fotoğraf İpuçları
+              </h4>
+              <ul className="text-white/60 text-sm space-y-2">
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  Yüksek çözünürlüklü ve net fotoğraflar kullanın
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  İyi aydınlatılmış ortamlarda çekilmiş fotoğraflar tercih edin
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  Profil fotoğrafınızda yüzünüz açıkça görünmeli
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  Fotoğrafları daha sonra Fotoğraf Galerisi sayfasından yönetebilirsiniz
+                </li>
+              </ul>
+            </div>
+          </div>
+        )}
+
         {/* Navigation Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 pt-6">
           {currentStep > 1 && (
@@ -918,7 +1209,7 @@ const PartnerProfileEdit = () => {
             Kaydet
           </Button>
           
-          {currentStep < 4 ? (
+          {currentStep < 5 ? (
             <Button
               onClick={() => setCurrentStep(prev => prev + 1)}
               className="bg-[#D4AF37] hover:bg-[#F3E5AB] text-black font-semibold h-12"
@@ -929,8 +1220,8 @@ const PartnerProfileEdit = () => {
           ) : (
             <Button
               onClick={handleSubmit}
-              disabled={saving}
-              className="bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] hover:from-[#F3E5AB] hover:to-[#D4AF37] text-black font-semibold h-12 px-8"
+              disabled={saving || uploadedImages.length === 0}
+              className="bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] hover:from-[#F3E5AB] hover:to-[#D4AF37] text-black font-semibold h-12 px-8 disabled:opacity-50"
             >
               <Send className="w-4 h-4 mr-2" />
               {saving ? 'Gönderiliyor...' : 'Onaya Gönder'}

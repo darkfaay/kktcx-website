@@ -117,6 +117,15 @@ KKTCX.com, Kuzey ve Güney Kıbrıs'a özel, sosyal eşlik hizmetleri platformud
 - **Dosya**: `/app/frontend/src/pages/partner/PartnerPhotos.js`
 - **Test**: Backend %100, Frontend %90 (seeded data düzeltildi)
 
+### P0: Profil Oluşturma Fotoğraf Zorunluluğu (TAMAMLANDI)
+- [x] 5. adım olarak "Fotoğraf" eklendi
+- [x] En az 1 fotoğraf yükleme zorunluluğu
+- [x] İlk fotoğraf otomatik profil fotoğrafı
+- [x] Zorunlu fotoğraf yüklenmeden "Onaya Gönder" butonu pasif
+- [x] Profil oluşturma otomatik "pending" status
+- [x] Admin rolü koruması (admin profil oluştursa bile rolü değişmez)
+- **Dosya**: `/app/frontend/src/pages/partner/PartnerProfileEdit.js`
+
 ---
 
 ## Devam Eden / Placeholder Özellikler 🚧
