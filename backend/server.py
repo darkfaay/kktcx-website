@@ -2,12 +2,13 @@
 KKTCX Backend Server
 Modular FastAPI Application
 """
-from fastapi import FastAPI, WebSocket, Response, Query, Header
+from fastapi import FastAPI, WebSocket, Response, Query, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
+import uuid
 
 # Configuration
 from config import CORS_ORIGINS, APP_NAME
@@ -207,6 +208,29 @@ async def get_homepage_data(lang: str = "tr"):
             "total_cities": total_cities
         }
     }
+
+
+# ==================== CONTACT FORM ====================
+
+@app.post("/api/contact")
+async def submit_contact_form(data: dict):
+    """Submit contact form message"""
+    if not data.get("name") or not data.get("email") or not data.get("message"):
+        raise HTTPException(status_code=400, detail="Name, email, and message are required")
+    
+    message = {
+        "id": str(uuid.uuid4()),
+        "name": data["name"],
+        "email": data["email"],
+        "subject": data.get("subject", ""),
+        "message": data["message"],
+        "status": "unread",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    
+    await db.contact_messages.insert_one(message)
+    
+    return {"success": True, "message": "Mesajınız başarıyla gönderildi"}
 
 
 # ==================== SEO ENDPOINTS ====================

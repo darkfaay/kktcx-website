@@ -67,6 +67,7 @@ import AdminAppointments from './pages/admin/AdminAppointments';
 import AdminReports from './pages/admin/AdminReports';
 import AdminReviews from './pages/admin/AdminReviews';
 import AdminMessages from './pages/admin/AdminMessages';
+import AdminContactMessages from './pages/admin/AdminContactMessages';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, roles = [] }) => {
@@ -173,6 +174,7 @@ function AppRoutes() {
             <Route path="randevular" element={<AdminAppointments />} />
             <Route path="degerlendirmeler" element={<AdminReviews />} />
             <Route path="mesajlar" element={<AdminMessages />} />
+            <Route path="iletisim-mesajlari" element={<AdminContactMessages />} />
             <Route path="sehirler" element={<AdminCities />} />
             <Route path="kategoriler" element={<AdminCategories />} />
             <Route path="paketler" element={<AdminPackages />} />

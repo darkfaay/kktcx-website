@@ -668,3 +668,88 @@ async def upload_branding(
         "type": type
     }
 
+
+# ==================== CONTACT MESSAGES ====================
+
+@router.get("/contact-messages")
+async def get_contact_messages(
+    page: int = 1,
+    limit: int = 20,
+    status: Optional[str] = None,
+    admin: dict = Depends(require_admin)
+):
+    """Get all contact messages"""
+    query = {}
+    if status:
+        query["status"] = status
+    
+    skip = (page - 1) * limit
+    total = await db.contact_messages.count_documents(query)
+    
+    messages = await db.contact_messages.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    return {
+        "messages": messages,
+        "total": total,
+        "page": page,
+        "pages": (total + limit - 1) // limit
+    }
+
+
+@router.get("/contact-messages/{message_id}")
+async def get_contact_message(
+    message_id: str,
+    admin: dict = Depends(require_admin)
+):
+    """Get a specific contact message"""
+    message = await db.contact_messages.find_one({"id": message_id}, {"_id": 0})
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    # Mark as read
+    if message.get("status") == "unread":
+        await db.contact_messages.update_one(
+            {"id": message_id},
+            {"$set": {"status": "read", "read_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        message["status"] = "read"
+    
+    return message
+
+
+@router.put("/contact-messages/{message_id}")
+async def update_contact_message(
+    message_id: str,
+    data: dict,
+    admin: dict = Depends(require_admin)
+):
+    """Update contact message status"""
+    message = await db.contact_messages.find_one({"id": message_id})
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    updates = {}
+    if data.get("status"):
+        updates["status"] = data["status"]
+    if data.get("admin_note"):
+        updates["admin_note"] = data["admin_note"]
+    
+    if updates:
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+        await db.contact_messages.update_one({"id": message_id}, {"$set": updates})
+    
+    return {"success": True}
+
+
+@router.delete("/contact-messages/{message_id}")
+async def delete_contact_message(
+    message_id: str,
+    admin: dict = Depends(require_admin)
+):
+    """Delete a contact message"""
+    result = await db.contact_messages.delete_one({"id": message_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    return {"success": True}
+

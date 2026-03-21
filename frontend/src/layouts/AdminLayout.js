@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, UserCheck, MapPin, Tag, 
   Settings, LogOut, Menu, X, ChevronLeft, ChevronRight,
   Bell, Search, Globe, FileText, Image, 
-  MousePointer, MessageSquare,
+  MousePointer, MessageSquare, Mail,
   Calendar, TrendingUp, CreditCard, Star
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -43,6 +43,7 @@ const AdminLayout = () => {
         { path: '/randevular', icon: Calendar, label: 'Randevular', badge: null },
         { path: '/degerlendirmeler', icon: Star, label: 'Değerlendirmeler', badge: null },
         { path: '/mesajlar', icon: MessageSquare, label: 'Mesajlar', badge: null },
+        { path: '/iletisim-mesajlari', icon: Mail, label: 'İletişim Mesajları', badge: 'pending' },
       ]
     },
     {
