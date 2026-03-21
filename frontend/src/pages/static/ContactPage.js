@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../context/AppContext';
 import { Mail, Phone, MapPin, Send, MessageCircle, Clock, Headphones, ArrowRight } from 'lucide-react';
 import { Button } from '../../components/ui/button';
@@ -6,9 +6,13 @@ import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { toast } from 'sonner';
 import PageBanner from '../../components/PageBanner';
+import axios from 'axios';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const ContactPage = () => {
   const { t } = useLanguage();
+  const [siteSettings, setSiteSettings] = useState({ general: {} });
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -16,6 +20,23 @@ const ContactPage = () => {
     message: ''
   });
   const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    fetchSiteSettings();
+  }, []);
+
+  const fetchSiteSettings = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/settings/public`);
+      if (response.data) {
+        setSiteSettings({
+          general: response.data.general || {},
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch site settings:', error);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,24 +58,24 @@ const ContactPage = () => {
       icon: Mail,
       title: 'E-posta',
       description: 'Detaylı sorularınız için',
-      value: 'info@kktcx.com',
+      value: siteSettings.general?.contact_email || 'info@kktcx.com',
       secondaryValue: 'destek@kktcx.com',
-      action: 'mailto:info@kktcx.com',
+      action: `mailto:${siteSettings.general?.contact_email || 'info@kktcx.com'}`,
       color: 'from-pink-500 to-rose-500'
     },
     {
-      icon: MessageCircle,
-      title: 'WhatsApp',
+      icon: Phone,
+      title: 'Telefon',
       description: 'Hızlı iletişim için',
-      value: '+90 533 XXX XX XX',
-      action: 'https://wa.me/90533XXXXXXX',
+      value: siteSettings.general?.contact_phone || '+90 533 XXX XX XX',
+      action: `tel:${siteSettings.general?.contact_phone || ''}`,
       color: 'from-green-500 to-emerald-500'
     },
     {
-      icon: Headphones,
-      title: 'Canlı Destek',
-      description: '7/24 online',
-      value: 'Şimdi başlat',
+      icon: MapPin,
+      title: 'Adres',
+      description: 'Ofisimiz',
+      value: siteSettings.general?.contact_address || 'Girne, Kuzey Kıbrıs',
       color: 'from-blue-500 to-cyan-500'
     }
   ];
