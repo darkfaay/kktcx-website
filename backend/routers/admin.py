@@ -169,6 +169,19 @@ async def get_profiles(
         query, {"_id": 0}
     ).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
     
+    # Add city names to profiles
+    cities_cache = {}
+    for profile in profiles:
+        city_id = profile.get("city_id")
+        if city_id:
+            if city_id not in cities_cache:
+                # Try to find city by id first, then by slug
+                city = await db.cities.find_one({"id": city_id}, {"_id": 0, "name_tr": 1, "name_en": 1})
+                if not city:
+                    city = await db.cities.find_one({"slug": city_id}, {"_id": 0, "name_tr": 1, "name_en": 1})
+                cities_cache[city_id] = city.get("name_tr", city_id) if city else city_id
+            profile["city_name"] = cities_cache[city_id]
+    
     return {
         "profiles": profiles,
         "total": total,
