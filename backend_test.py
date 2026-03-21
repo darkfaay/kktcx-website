@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 
 class KKTCXAPITester:
-    def __init__(self, base_url="https://orientation-hub-6.preview.emergentagent.com"):
+    def __init__(self, base_url="https://cyprus-partners-dev.preview.emergentagent.com"):
         self.base_url = base_url
         self.token = None
         self.admin_token = None
