@@ -42,6 +42,7 @@ const AdminLayout = () => {
         { path: '/partnerler', icon: UserCheck, label: 'Partner & İlanlar', badge: 'pending' },
         { path: '/randevular', icon: Calendar, label: 'Randevular', badge: null },
         { path: '/degerlendirmeler', icon: Star, label: 'Değerlendirmeler', badge: null },
+        { path: '/mesajlar', icon: MessageSquare, label: 'Mesajlar', badge: null },
       ]
     },
     {

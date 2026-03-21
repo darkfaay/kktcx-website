@@ -454,11 +454,46 @@ KKTCX.com, Kuzey ve Güney Kıbrıs'a özel, sosyal eşlik hizmetleri platformud
   - `server.py` (327 satır) - Ana giriş noktası
   - `config.py` - Ayarlar
   - `database.py` - MongoDB bağlantısı
-  - `routers/` - API route'ları (auth, partners, catalog, messages, appointments, admin)
+  - `routers/` - API route'ları (auth, partners, catalog, messages, appointments, admin, reviews, admin_messages)
   - `models/schemas.py` - Pydantic modeller
   - `services/` - İş servisleri (sms, storage, websocket)
   - `utils/auth.py` - JWT yardımcıları
 - ✅ **Test Sonuçları:** %96 backend (25/26), %100 frontend (iteration 11)
+
+### ✅ Yorum ve Değerlendirme Sistemi (Tamamlandı - 21 Mart 2026)
+- ✅ Backend API'leri (`routers/reviews.py`):
+  - `POST /api/partners/{id}/reviews` - Yorum ekleme
+  - `GET /api/partners/{id}/reviews` - Partner yorumlarını listeleme
+  - `GET /api/admin/reviews` - Admin yorum listesi
+  - `PUT /api/admin/reviews/{id}/status` - Yorum onaylama/reddetme
+  - `DELETE /api/admin/reviews/{id}` - Yorum silme
+- ✅ Admin Yorumlar Sayfası (`AdminReviews.js`)
+- ✅ Partner Detay sayfasına yorum bölümü eklendi
+- ✅ Feature toggle desteği (`reviews_enabled`)
+
+### ✅ Admin Mesaj Moderasyonu (Tamamlandı - 21 Mart 2026)
+- ✅ Backend API'leri (`routers/admin_messages.py`):
+  - `GET /api/admin/messages/stats` - Mesaj istatistikleri
+  - `GET /api/admin/conversations` - Konuşma listesi
+  - `GET /api/admin/conversations/{id}/messages` - Konuşma detayı
+  - `GET /api/admin/messages` - Tüm mesajlar (arama, işaretli filtresi)
+  - `PUT /api/admin/messages/{id}/flag` - Mesaj işaretleme
+  - `DELETE /api/admin/messages/{id}` - Mesaj silme
+  - `DELETE /api/admin/conversations/{id}` - Konuşma silme
+- ✅ Admin Mesajlar Sayfası (`AdminMessages.js`)
+  - İstatistik kartları (Toplam Mesaj, Bugün, İşaretli, Konuşma)
+  - Konuşmalar sekmesi (katılımcılar, son mesaj, mesaj sayısı)
+  - Tüm Mesajlar sekmesi (arama, sadece işaretli filtresi)
+  - Konuşma detayı dialogu
+  - Mesaj işaretleme/silme işlemleri
+- ✅ **Bug Düzeltmesi:** `find_one().sort()` hatası düzeltildi
+- ✅ **Bug Düzeltmesi:** "Invalid Date" sorunu düzeltildi
+
+### ✅ Site Özellik Toggle'ları (Tamamlandı - 21 Mart 2026)
+- ✅ `SiteSettingsContext` oluşturuldu
+- ✅ `isFeatureEnabled()` fonksiyonu ile özellik kontrolü
+- ✅ Admin Site Ayarları sayfasından toggle yönetimi
+- ✅ Desteklenen özellikler: reviews_enabled, messaging_enabled, favorites_enabled, booking_enabled
 
 ### P1 - Partner/Kullanıcı Panel Modernizasyonu
 - [ ] "Midnight Velvet" temasını uygula (design_guidelines.json)
