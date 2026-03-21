@@ -198,3 +198,9 @@ KKTCX.com, Kuzey ve Güney Kıbrıs'a özel, sosyal eşlik hizmetleri platformud
   - Sexy card hover efektleri
   - Emoji'li cinsiyet butonları
   - Premium VIP kartları için glow animasyonları
+
+### Bug Fixes (21 Mart 2026 - Session 2)
+- ✅ **Partnerler Sayfası Filtre Düzeltmesi** - Desktop'ta mükerrer quick filters kaldırıldı, sadece sidebar filtreleri kaldı
+- ✅ **Rumca Dil Rotası Düzeltmesi** - /el rotası App.js'e eklendi, artık 404 vermiyor
+- ✅ **Rumca Çeviriler Eklendi** - AppContext.js'e tam Yunanca çeviri seti eklendi
+- ✅ **Yaş Doğrulama Modalı Çoklu Dil Desteği** - TR, EN, RU, DE, EL dillerinde gösterim
