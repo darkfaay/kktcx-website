@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth, useLanguage } from '../../context/AppContext';
-import { Mail, Lock, Eye, EyeOff, User, Phone, ArrowRight, Sparkles, Check, Users } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User, Phone, ArrowRight, Sparkles, Check, Users, Heart } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { toast } from 'sonner';
+
+const orientationOptions = [
+  { value: 'heterosexual', label: 'Heteroseksüel', icon: '💑' },
+  { value: 'lesbian', label: 'Lezbiyen', icon: '👩‍❤️‍👩' },
+  { value: 'gay', label: 'Gay', icon: '👨‍❤️‍👨' },
+  { value: 'bisexual', label: 'Biseksüel', icon: '💕' },
+];
 
 const RegisterPage = () => {
   const { register } = useAuth();
@@ -21,13 +28,25 @@ const RegisterPage = () => {
     password: '',
     confirmPassword: '',
     role: isPartnerRegistration ? 'partner' : 'user',
-    language: lang
+    language: lang,
+    orientations: []
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const toggleOrientation = (orientation) => {
+    setFormData(prev => {
+      const current = prev.orientations || [];
+      if (current.includes(orientation)) {
+        return { ...prev, orientations: current.filter(o => o !== orientation) };
+      } else {
+        return { ...prev, orientations: [...current, orientation] };
+      }
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -267,6 +286,33 @@ const RegisterPage = () => {
                     data-testid="register-confirm-password"
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Orientation Selection - For personalized experience */}
+            <div>
+              <label className="text-white/70 text-sm mb-3 block font-medium flex items-center gap-2">
+                <Heart className="w-4 h-4 text-[#E91E63]" />
+                İlgi Alanınız (İsteğe bağlı)
+              </label>
+              <p className="text-white/40 text-xs mb-3">Kişiselleştirilmiş deneyim için seçin</p>
+              <div className="grid grid-cols-2 gap-2">
+                {orientationOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => toggleOrientation(option.value)}
+                    className={`p-3 rounded-xl border transition-all text-sm flex items-center justify-center gap-2 ${
+                      formData.orientations?.includes(option.value)
+                        ? 'bg-[#E91E63]/20 border-[#E91E63] text-[#FF6090]'
+                        : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:border-white/20'
+                    }`}
+                    data-testid={`orientation-${option.value}`}
+                  >
+                    <span>{option.icon}</span>
+                    <span>{option.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
 

@@ -141,6 +141,7 @@ class UserCreate(BaseModel):
     name: Optional[str] = None
     role: str = UserRole.USER
     language: str = "tr"
+    orientations: List[str] = []  # heterosexual, lesbian, gay, bisexual
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -153,6 +154,7 @@ class UserResponse(BaseModel):
     name: Optional[str] = None
     role: str
     language: str
+    orientations: List[str] = []
     created_at: str
 
 class TokenResponse(BaseModel):
@@ -377,6 +379,7 @@ async def register(data: UserCreate):
         "name": data.name,
         "role": data.role,
         "language": data.language,
+        "orientations": data.orientations,
         "is_active": True,
         "is_verified": False,
         "created_at": datetime.now(timezone.utc).isoformat()
@@ -393,6 +396,7 @@ async def register(data: UserCreate):
             name=data.name,
             role=data.role,
             language=data.language,
+            orientations=data.orientations,
             created_at=user["created_at"]
         )
     )
@@ -416,6 +420,7 @@ async def login(data: UserLogin):
             name=user.get("name"),
             role=user["role"],
             language=user.get("language", "tr"),
+            orientations=user.get("orientations", []),
             created_at=user["created_at"]
         )
     )
@@ -429,6 +434,7 @@ async def get_me(user: dict = Depends(get_current_user)):
         name=user.get("name"),
         role=user["role"],
         language=user.get("language", "tr"),
+        orientations=user.get("orientations", []),
         created_at=user["created_at"]
     )
 
@@ -437,6 +443,7 @@ async def update_profile(
     name: Optional[str] = None,
     phone: Optional[str] = None,
     language: Optional[str] = None,
+    orientations: Optional[List[str]] = Query(None),
     user: dict = Depends(get_current_user)
 ):
     updates = {}
@@ -446,6 +453,8 @@ async def update_profile(
         updates["phone"] = phone
     if language is not None:
         updates["language"] = language
+    if orientations is not None:
+        updates["orientations"] = orientations
     
     if updates:
         await db.users.update_one({"id": user["id"]}, {"$set": updates})

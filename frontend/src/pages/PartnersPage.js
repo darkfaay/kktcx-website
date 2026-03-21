@@ -24,6 +24,7 @@ import {
 } from '../components/ui/sheet';
 import { Checkbox } from '../components/ui/checkbox';
 import { Slider } from '../components/ui/slider';
+import PageBanner from '../components/PageBanner';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -494,7 +495,11 @@ const PartnersPage = () => {
   );
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen">
+      {/* Dynamic Page Banner */}
+      <PageBanner variant="listing" height="h-[180px] md:h-[240px]" />
+      
+      <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl md:text-4xl font-bold text-white font-serif">
@@ -611,6 +616,7 @@ const PartnersPage = () => {
             </>
           )}
         </div>
+      </div>
       </div>
     </div>
   );
