@@ -7,8 +7,8 @@ import { Input } from '../../components/ui/input';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL;
-const WS_URL = API_URL.replace('https://', 'wss://').replace('http://', 'ws://');
+const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+const WS_URL = API_URL ? API_URL.replace('https://', 'wss://').replace('http://', 'ws://') : '';
 
 const ConversationPage = () => {
   const { conversationId } = useParams();
