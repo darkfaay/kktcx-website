@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth, useLanguage, useSiteSettings } from '../context/AppContext';
+import { useAuth, useLanguage } from '../context/AppContext';
 import axios from 'axios';
 import { 
   Search, MapPin, Heart, Shield, Users, ChevronRight, 
@@ -344,9 +344,9 @@ const PremiumShowcaseCard = ({ profile, lang }) => {
 const HomePage = () => {
   const { lang, t } = useLanguage();
   const { user } = useAuth();
-  const { settings } = useSiteSettings();
   const navigate = useNavigate();
   const [homeData, setHomeData] = useState(null);
+  const [siteSettings, setSiteSettings] = useState({ general: {}, homepage: {} });
   const [loading, setLoading] = useState(true);
   const [searchCity, setSearchCity] = useState('');
   const [searchGender, setSearchGender] = useState('');
@@ -355,6 +355,7 @@ const HomePage = () => {
 
   useEffect(() => {
     fetchHomeData();
+    fetchSiteSettings();
   }, [lang]);
 
   const fetchHomeData = async () => {
@@ -365,6 +366,20 @@ const HomePage = () => {
       console.error('Failed to fetch home data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSiteSettings = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/settings/public`);
+      if (response.data) {
+        setSiteSettings({
+          general: response.data.general || {},
+          homepage: response.data.homepage || {},
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch site settings:', error);
     }
   };
 
@@ -421,21 +436,21 @@ const HomePage = () => {
           <div className="animate-fade-in mb-8">
             <span className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-[#E91E63]/20 to-[#9C27B0]/20 border border-[#E91E63]/30 text-[#FF6090] backdrop-blur-xl">
               <Flame className="w-5 h-5 animate-pulse" />
-              <span className="font-medium">{settings?.general?.site_tagline || "Kıbrıs'ın Premium Eşlik Platformu"}</span>
+              <span className="font-medium">{siteSettings?.general?.site_tagline || "Kıbrıs'ın Premium Eşlik Platformu"}</span>
               <Flame className="w-5 h-5 animate-pulse" />
             </span>
           </div>
           
           {/* Main Title with sexy gradient */}
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 font-serif animate-slide-up">
-            <span className="gradient-text hero-text-shadow">{settings?.homepage?.hero_title || "Tutkunun Adresi"}</span>
+            <span className="gradient-text hero-text-shadow">{siteSettings?.homepage?.hero_title || "Tutkunun Adresi"}</span>
           </h1>
           
           {/* Subtitle */}
           <p className="text-lg md:text-xl text-white/60 mb-12 max-w-2xl mx-auto animate-fade-in leading-relaxed" style={{ animationDelay: '0.3s' }}>
-            {settings?.homepage?.hero_subtitle || "Özel anlarınız için"} <span className="text-[#E91E63]">seçkin partnerler</span>. 
+            {siteSettings?.homepage?.hero_subtitle || "Özel anlarınız için"} <span className="text-[#E91E63]">seçkin partnerler</span>. 
             <br className="hidden md:block" />
-            {settings?.homepage?.hero_description || "Yemek eşliği, davet arkadaşlığı ve unutulmaz deneyimler."}
+            {siteSettings?.homepage?.hero_description || "Yemek eşliği, davet arkadaşlığı ve unutulmaz deneyimler."}
           </p>
 
           {/* Gender Filter Tabs */}
