@@ -62,9 +62,10 @@ const PartnerCard = ({ profile, lang, premium = false }) => {
     }
   };
 
-  const coverImage = profile.cover_image?.path 
-    ? `${API_URL}/api/files/${profile.cover_image.path}`
-    : 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&h=600&fit=crop';
+  const coverImage = profile.photo_url 
+    || (profile.cover_image?.path 
+      ? `${API_URL}/api/files/${profile.cover_image.path}`
+      : 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&h=600&fit=crop');
 
   const isBlurred = profile.cover_image?.is_blurred;
 
@@ -215,9 +216,10 @@ const PremiumShowcaseCard = ({ profile, lang }) => {
     }
   };
 
-  const coverImage = profile.cover_image?.path 
-    ? `${API_URL}/api/files/${profile.cover_image.path}`
-    : 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&h=600&fit=crop';
+  const coverImage = profile.photo_url 
+    || (profile.cover_image?.path 
+      ? `${API_URL}/api/files/${profile.cover_image.path}`
+      : 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&h=600&fit=crop');
 
   const isBlurred = profile.cover_image?.is_blurred;
 
