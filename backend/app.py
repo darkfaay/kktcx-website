@@ -1,22 +1,26 @@
 """
 Simple KKTCX Backend Server
 """
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from motor.motor_asyncio import AsyncIOMotorClient
 from contextlib import asynccontextmanager
+from pydantic import BaseModel
+from jose import jwt, JWTError
 import bcrypt
 import uuid
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 # Configuration
 MONGO_URL = os.environ.get('MONGO_URL')
 DB_NAME = os.environ.get('DB_NAME', 'kktcx')
 JWT_SECRET = os.environ.get('JWT_SECRET', 'kktcx-secret-key')
+JWT_ALGORITHM = "HS256"
 
 # Frontend build path
 FRONTEND_BUILD = Path(__file__).parent.parent / "frontend" / "build"
@@ -24,6 +28,20 @@ FRONTEND_BUILD = Path(__file__).parent.parent / "frontend" / "build"
 # Database
 client = None
 db = None
+
+# Security
+security = HTTPBearer()
+
+# Pydantic models
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    name: str = ""
+    role: str = "user"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -48,6 +66,83 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Helper functions
+def create_token(user_id: str, role: str) -> str:
+    payload = {
+        "sub": user_id,
+        "role": role,
+        "exp": datetime.now(timezone.utc) + timedelta(days=7)
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("sub")
+        user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        return user
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+# Auth endpoints
+@app.post("/api/auth/login")
+async def login(request: LoginRequest):
+    user = await db.users.find_one({"email": request.email})
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    if not bcrypt.checkpw(request.password.encode(), user["password"].encode()):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    token = create_token(user["id"], user.get("role", "user"))
+    
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "id": user["id"],
+            "email": user["email"],
+            "name": user.get("name", ""),
+            "role": user.get("role", "user")
+        }
+    }
+
+@app.post("/api/auth/register")
+async def register(request: RegisterRequest):
+    existing = await db.users.find_one({"email": request.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    hashed = bcrypt.hashpw(request.password.encode(), bcrypt.gensalt()).decode()
+    user = {
+        "id": str(uuid.uuid4()),
+        "email": request.email,
+        "password": hashed,
+        "name": request.name,
+        "role": request.role if request.role in ["user", "partner"] else "user",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.users.insert_one(user)
+    
+    token = create_token(user["id"], user["role"])
+    
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "id": user["id"],
+            "email": user["email"],
+            "name": user["name"],
+            "role": user["role"]
+        }
+    }
+
+@app.get("/api/auth/me")
+async def get_me(user: dict = Depends(get_current_user)):
+    return user
 
 # Health check
 @app.get("/api/health")
