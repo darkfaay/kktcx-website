@@ -616,11 +616,38 @@ Tüm paneller (Partner + Kullanıcı) yeni tema ile güncellendi:
 - ✅ **Randevu Detay Dialogu:** Müşteri bilgileri, iletişim bilgileri, notlar
 - **Dosyalar:** `/app/frontend/src/pages/partner/PartnerAppointments.js`
 
+### ✅ P0 - İletişim Formu ve Admin Mesaj Yönetimi (Tamamlandı - 21 Mart 2026)
+- ✅ **Herkese Açık İletişim Formu:**
+  - Contact sayfasından doğrudan iletişim bilgileri kaldırıldı
+  - Mesaj gönderme formu eklendi (Adınız, E-posta, Konu, Mesaj)
+  - Sosyal medya linkleri bırakıldı (Instagram, Facebook, Telegram, Twitter)
+  - Backend: `POST /api/contact` endpoint
+- ✅ **Admin İletişim Mesajları Sayfası:**
+  - Tüm iletişim mesajlarını listeleme
+  - Durum filtreleme (Okunmadı, Okundu, Yanıtlandı, Arşivlendi)
+  - Mesaj detayı modal (gönderen bilgisi, konu, mesaj, admin notu)
+  - Mesaj durumu güncelleme (Yanıtlandı, Arşivle)
+  - Mesaj silme
+  - Backend: `GET/PUT/DELETE /api/admin/contact-messages/{id}`
+- ✅ **Sidebar Navigasyonu:**
+  - "İletişim Mesajları" linki eklendi (Mail ikonu, sarı bildirim noktası)
+  - Route: `/admin/iletisim-mesajlari`
+- ✅ **Bug Düzeltmeleri:**
+  - `uuid` ve `timezone` import eksikliği düzeltildi
+  - `HTTPException` import eksikliği düzeltildi
+- **Test:** 16/16 backend, %100 frontend (iteration_13.json)
+- **Dosyalar:**
+  - `/app/frontend/src/pages/admin/AdminContactMessages.js`
+  - `/app/frontend/src/pages/static/ContactPage.js`
+  - `/app/backend/server.py` (POST /api/contact)
+  - `/app/backend/routers/admin.py` (contact-messages endpoints)
+
 ### P2 - Gelecek Özellikler
 - [ ] PostgreSQL'e geçiş
 - [ ] react-i18next ile tam i18n desteği
 - [ ] "Bir Partner, Birden Fazla İlan" modeli
 - [ ] Stripe ile randevu ödeme entegrasyonu
 - [ ] /sitemap.xml route düzeltmesi (minor)
+- [ ] Dinamik tema renkleri (CSS değişkenlerini tüm bileşenlere yayma)
 
 
