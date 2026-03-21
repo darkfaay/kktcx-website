@@ -266,17 +266,17 @@ const PartnerDetailPage = () => {
     return null;
   }
 
-  const coverImage = profile.cover_url 
-    || (profile.cover_image?.path 
-      ? `${API_URL}/api/files/${profile.cover_image.path}`
-      : profile.images?.[0]?.path 
-        ? `${API_URL}/api/files/${profile.images[0].path}`
-        : 'https://images.unsplash.com/photo-1590659163722-88a80a7ff913?w=1200&h=600&fit=crop');
+  // Fixed elegant banner for all profiles - Black velvet with golden sparkles
+  const PROFILE_BANNER = "https://static.prod-images.emergentagent.com/jobs/eaa13a1c-805a-45e7-82c2-e4a978845eba/images/e1e6edadc0b7a6cf672c766fda9b543d345dba1d505cef491dc9084fdb4a03be.png";
+  
+  const coverImage = PROFILE_BANNER;
 
   const profilePhoto = profile.photo_url 
     || (profile.cover_image?.path 
       ? `${API_URL}/api/files/${profile.cover_image.path}`
-      : 'https://images.unsplash.com/photo-1590659163722-88a80a7ff913?w=400&h=400&fit=crop');
+      : profile.images?.[0]?.url
+        ? profile.images[0].url
+        : 'https://images.unsplash.com/photo-1590659163722-88a80a7ff913?w=400&h=400&fit=crop');
 
   const images = profile.gallery?.length > 0 
     ? profile.gallery.map(url => ({ url, isBlurred: false }))
