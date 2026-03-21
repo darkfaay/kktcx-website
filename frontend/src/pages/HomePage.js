@@ -185,7 +185,7 @@ const PartnerCard = ({ profile, lang, premium = false }) => {
           {/* Service types */}
           {profile.service_types?.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-3">
-              {profile.service_types.slice(0, 2).map((type) => (
+              {(profile.service_types || []).slice(0, 2).map((type) => (
                 <span key={type} className="text-xs px-2 py-0.5 rounded-full bg-[#E91E63]/20 text-[#FF6090] backdrop-blur-sm">
                   {serviceTypeLabels[type] || type}
                 </span>
@@ -321,7 +321,7 @@ const PremiumShowcaseCard = ({ profile, lang }) => {
           {/* Service types */}
           {profile.service_types?.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
-              {profile.service_types.map((type) => (
+              {(profile.service_types || []).map((type) => (
                 <span key={type} className="text-sm px-3 py-1 rounded-full bg-[#E91E63]/30 text-[#FF6090] font-medium backdrop-blur-sm">
                   {serviceTypeLabels[type] || type}
                 </span>

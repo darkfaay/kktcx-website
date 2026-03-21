@@ -531,7 +531,7 @@ const PartnerDetailPage = () => {
                   Sunulan Hizmetler
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {profile.service_types.map((type) => {
+                  {(profile.service_types || []).map((type) => {
                     const service = serviceTypeLabels[type];
                     const IconComponent = service?.icon || Star;
                     return (
@@ -577,7 +577,7 @@ const PartnerDetailPage = () => {
                   <span className="text-white/40 text-sm ml-2">({images.length} fotoğraf)</span>
                 </h3>
                 <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-                  {images.map((img, idx) => (
+                  {(images || []).map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => openLightbox(idx)}
@@ -606,7 +606,7 @@ const PartnerDetailPage = () => {
                   Konuşulan Diller
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {profile.languages.map((lng) => {
+                  {(profile.languages || []).map((lng) => {
                     const languageNames = {
                       tr: 'Türkçe',
                       en: 'English',
@@ -725,9 +725,9 @@ const PartnerDetailPage = () => {
               )}
               
               {/* Reviews List */}
-              {reviews.length > 0 ? (
+              {(reviews || []).length > 0 ? (
                 <div className="space-y-4">
-                  {reviews.map((review) => (
+                  {(reviews || []).map((review) => (
                     <div key={review.id} className="border-b border-white/5 pb-4 last:border-0 last:pb-0">
                       <div className="flex items-start justify-between mb-2">
                         <div>

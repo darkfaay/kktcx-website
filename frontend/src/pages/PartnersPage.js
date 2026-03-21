@@ -152,7 +152,7 @@ const PartnerCard = ({ profile, lang, t, onFavorite }) => {
           {/* Service Types */}
           {profile.service_types?.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2">
-              {profile.service_types.slice(0, 2).map((type) => (
+              {(profile.service_types || []).slice(0, 2).map((type) => (
                 <span key={type} className="text-xs px-2 py-0.5 rounded-full bg-[#E91E63]/20 text-[#FF6090]">
                   {t(serviceTypeKeys[type]) || type}
                 </span>
