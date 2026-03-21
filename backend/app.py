@@ -285,27 +285,49 @@ async def seed_database(secret: str = ""):
         })
         results["admin"] = True
 
-    # Cities
-    if await db.cities.count_documents({}) == 0:
-        cities = [
-            {"id": str(uuid.uuid4()), "slug": "girne", "region": "north", "names": {"tr": "Girne", "en": "Kyrenia"}, "active": True},
-            {"id": str(uuid.uuid4()), "slug": "lefkosa", "region": "north", "names": {"tr": "Lefkoşa", "en": "Nicosia"}, "active": True},
-            {"id": str(uuid.uuid4()), "slug": "gazimagusa", "region": "north", "names": {"tr": "Gazimağusa", "en": "Famagusta"}, "active": True},
-            {"id": str(uuid.uuid4()), "slug": "guzelyurt", "region": "north", "names": {"tr": "Güzelyurt", "en": "Morphou"}, "active": True},
-            {"id": str(uuid.uuid4()), "slug": "iskele", "region": "north", "names": {"tr": "İskele", "en": "Iskele"}, "active": True},
-        ]
-        await db.cities.insert_many(cities)
-        results["cities"] = len(cities)
+    # Cities - Delete and recreate with all cities
+    await db.cities.delete_many({})
+    cities = [
+        # Kuzey Kıbrıs
+        {"id": str(uuid.uuid4()), "slug": "girne", "region": "north", "names": {"tr": "Girne", "en": "Kyrenia", "ru": "Кирения", "de": "Kyrenia"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "lefkosa-kuzey", "region": "north", "names": {"tr": "Lefkoşa (Kuzey)", "en": "Nicosia (North)", "ru": "Никосия (Север)", "de": "Nikosia (Nord)"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "gazimagusa", "region": "north", "names": {"tr": "Gazimağusa", "en": "Famagusta", "ru": "Фамагуста", "de": "Famagusta"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "guzelyurt", "region": "north", "names": {"tr": "Güzelyurt", "en": "Morphou", "ru": "Морфу", "de": "Morphou"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "iskele", "region": "north", "names": {"tr": "İskele", "en": "Iskele", "ru": "Искеле", "de": "Iskele"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "lefke", "region": "north", "names": {"tr": "Lefke", "en": "Lefke", "ru": "Лефке", "de": "Lefke"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "alsancak", "region": "north", "names": {"tr": "Alsancak", "en": "Alsancak", "ru": "Алсанджак", "de": "Alsancak"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "lapta", "region": "north", "names": {"tr": "Lapta", "en": "Lapithos", "ru": "Лапта", "de": "Lapta"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "catalkoy", "region": "north", "names": {"tr": "Çatalköy", "en": "Çatalköy", "ru": "Чаталкёй", "de": "Çatalköy"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "karakum", "region": "north", "names": {"tr": "Karakum", "en": "Karakum", "ru": "Каракум", "de": "Karakum"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "bogaz", "region": "north", "names": {"tr": "Boğaz", "en": "Bogaz", "ru": "Богаз", "de": "Bogaz"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "yeni-iskele", "region": "north", "names": {"tr": "Yeni İskele", "en": "New Iskele", "ru": "Новая Искеле", "de": "Neu Iskele"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "tatlisu", "region": "north", "names": {"tr": "Tatlısu", "en": "Tatlisu", "ru": "Татлысу", "de": "Tatlısu"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "karpaz", "region": "north", "names": {"tr": "Karpaz", "en": "Karpaz", "ru": "Карпаз", "de": "Karpaz"}, "active": True},
+        # Güney Kıbrıs
+        {"id": str(uuid.uuid4()), "slug": "lefkosa-guney", "region": "south", "names": {"tr": "Lefkoşa (Güney)", "en": "Nicosia (South)", "ru": "Никосия (Юг)", "de": "Nikosia (Süd)"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "limasol", "region": "south", "names": {"tr": "Limasol", "en": "Limassol", "ru": "Лимассол", "de": "Limassol"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "larnaka", "region": "south", "names": {"tr": "Larnaka", "en": "Larnaca", "ru": "Ларнака", "de": "Larnaka"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "baf", "region": "south", "names": {"tr": "Baf (Paphos)", "en": "Paphos", "ru": "Пафос", "de": "Paphos"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "ayia-napa", "region": "south", "names": {"tr": "Ayia Napa", "en": "Ayia Napa", "ru": "Айя-Напа", "de": "Ayia Napa"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "protaras", "region": "south", "names": {"tr": "Protaras", "en": "Protaras", "ru": "Протарас", "de": "Protaras"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "paralimni", "region": "south", "names": {"tr": "Paralimni", "en": "Paralimni", "ru": "Паралимни", "de": "Paralimni"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "polis", "region": "south", "names": {"tr": "Polis", "en": "Polis", "ru": "Полис", "de": "Polis"}, "active": True},
+    ]
+    await db.cities.insert_many(cities)
+    results["cities"] = len(cities)
 
-    # Categories
-    if await db.categories.count_documents({}) == 0:
-        categories = [
-            {"id": str(uuid.uuid4()), "slug": "escort", "names": {"tr": "Eskort", "en": "Escort"}, "active": True},
-            {"id": str(uuid.uuid4()), "slug": "massage", "names": {"tr": "Masaj", "en": "Massage"}, "active": True},
-            {"id": str(uuid.uuid4()), "slug": "companion", "names": {"tr": "Eşlik", "en": "Companion"}, "active": True},
-        ]
-        await db.categories.insert_many(categories)
-        results["categories"] = len(categories)
+    # Categories - Delete and recreate with all categories
+    await db.categories.delete_many({})
+    categories = [
+        {"id": str(uuid.uuid4()), "slug": "escort", "names": {"tr": "Eskort", "en": "Escort", "ru": "Эскорт", "de": "Escort"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "massage", "names": {"tr": "Masaj", "en": "Massage", "ru": "Массаж", "de": "Massage"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "companion", "names": {"tr": "Eşlik", "en": "Companion", "ru": "Компаньон", "de": "Begleitung"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "gigolo", "names": {"tr": "Jigolo", "en": "Gigolo", "ru": "Жиголо", "de": "Gigolo"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "trans", "names": {"tr": "Trans", "en": "Trans", "ru": "Транс", "de": "Trans"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "vip", "names": {"tr": "VIP", "en": "VIP", "ru": "VIP", "de": "VIP"}, "active": True},
+    ]
+    await db.categories.insert_many(categories)
+    results["categories"] = len(categories)
 
     # Settings
     settings = [
