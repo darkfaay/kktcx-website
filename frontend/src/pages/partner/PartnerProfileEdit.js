@@ -329,7 +329,7 @@ const PartnerProfileEdit = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto" data-testid="partner-profile-edit">
+    <div className="w-full" data-testid="partner-profile-edit">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
