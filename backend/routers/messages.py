@@ -29,10 +29,22 @@ async def get_conversations(user: dict = Depends(get_current_user)):
             other_user = await db.users.find_one({"id": other_id}, {"_id": 0, "password": 0})
             if other_user:
                 profile = await db.partner_profiles.find_one({"user_id": other_id}, {"_id": 0})
+                
+                # Get avatar - try cover_image first, then first image from gallery
+                avatar = None
+                if profile:
+                    cover = profile.get("cover_image")
+                    images = profile.get("images", [])
+                    
+                    if cover:
+                        avatar = cover.get("url") or cover.get("path")
+                    elif images and len(images) > 0:
+                        avatar = images[0].get("url") or images[0].get("path")
+                
                 conv["other_user"] = {
                     "id": other_user["id"],
                     "name": profile.get("nickname") if profile else other_user.get("name", other_user["email"].split("@")[0]),
-                    "avatar": profile.get("cover_image", {}).get("path") if profile else None,
+                    "avatar": avatar,
                     "is_partner": profile is not None
                 }
         

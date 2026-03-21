@@ -100,8 +100,10 @@ const MessagesPage = () => {
       ) : (
         <div className="space-y-2">
           {filteredConversations.map((conversation) => {
-            const avatar = conversation.other_user?.avatar 
-              ? `${API_URL}/api/files/${conversation.other_user.avatar}`
+            // Handle avatar URL - check if it's already a full URL or needs API prefix
+            const avatarPath = conversation.other_user?.avatar;
+            const avatar = avatarPath 
+              ? (avatarPath.startsWith('http') ? avatarPath : `${API_URL}/api/files/${avatarPath}`)
               : null;
             
             return (
