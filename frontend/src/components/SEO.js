@@ -40,39 +40,39 @@ export const SEOSettingsProvider = ({ children }) => {
 // SEO translations for all supported languages (fallback values)
 const seoTranslations = {
   tr: {
-    siteName: 'KKTCX - Kuzey Kıbrıs Eskort, Jigolo ve Partner Rehberi',
-    defaultTitle: 'KKTCX - Kuzey Kıbrıs\'ın En İyi Eskort, Jigolo ve Partner Platformu',
-    defaultDescription: 'Kuzey Kıbrıs\'ta (KKTC) en güvenilir eskort, jigolo, partner ve refakatçi hizmetleri. Girne, Lefkoşa, Gazimağusa, Güzelyurt bölgelerinde VIP escort, erkek partner ve jigolo ilanları. 7/24 hizmet.',
-    defaultKeywords: 'kktc eskort, kuzey kıbrıs escort, girne eskort, lefkoşa escort, gazimağusa eskort, kıbrıs partner, kktc jigolo, jigolo kıbrıs, erkek partner kktc, kuzey kıbrıs jigolo, girne jigolo, lefkoşa jigolo, kuzey kıbrıs refakatçi, vip escort kıbrıs, companion kktc, escort cyprus north, kıbrıs bayan partner, kktc erkek partner, gay escort kıbrıs, erkek eskort kıbrıs, male escort cyprus, jigolo hizmeti kktc',
+    siteName: 'KKTCX - Kuzey Kıbrıs #1 Escort, Jigolo ve Partner Platformu',
+    defaultTitle: 'KKTCX - Kuzey Kıbrıs En İyi Escort, Jigolo, Partner Sitesi | Girne, Lefkoşa, Gazimağusa',
+    defaultDescription: 'Kuzey Kıbrıs (KKTC) 1 numaralı escort ve jigolo platformu! Girne, Lefkoşa, Gazimağusa, İskele\'de VIP escort, bayan partner, erkek eskort, jigolo ilanları. Doğrulanmış profiller, güvenli görüşme, 7/24 aktif. Casino eşliği, yemek arkadaşlığı, özel etkinlikler.',
+    defaultKeywords: 'kktc escort, kuzey kıbrıs escort, girne escort, lefkoşa escort, gazimağusa escort, kıbrıs jigolo, kktc jigolo, girne jigolo, lefkoşa jigolo, kıbrıs partner, escort kıbrıs, eskort kıbrıs, kıbrıs bayan escort, kıbrıs erkek escort, vip escort kıbrıs, casino escort kıbrıs, otel escort, iskele escort, güzelyurt escort, kıbrıs gece hayatı, north cyprus escort, kyrenia escort, kktcx',
     pages: {
       home: {
-        title: 'KKTCX - Kuzey Kıbrıs Eskort, Jigolo, Partner ve Refakatçi Platformu',
-        description: 'Kuzey Kıbrıs\'ın en güvenilir escort, jigolo ve partner platformu. Girne, Lefkoşa, Gazimağusa\'da doğrulanmış eskort ve jigolo ilanları, VIP refakatçi hizmetleri ve companion randevuları.',
+        title: 'KKTCX - Kuzey Kıbrıs #1 Escort, Jigolo ve Partner Platformu | 7/24 Aktif',
+        description: 'Kuzey Kıbrıs\'ın en popüler escort ve jigolo platformu KKTCX! Girne, Lefkoşa, Gazimağusa\'da 500+ doğrulanmış profil. VIP escort, bayan partner, erkek eskort, jigolo hizmetleri. Güvenli, gizli, profesyonel.',
       },
       partners: {
-        title: 'Eskort, Jigolo ve Partner İlanları - KKTCX | Kuzey Kıbrıs',
-        description: 'Kuzey Kıbrıs\'ta doğrulanmış eskort, jigolo ve partner ilanları. Bayan escort, erkek partner, jigolo ve refakatçi hizmetleri. Girne, Lefkoşa, Gazimağusa, Güzelyurt.',
+        title: 'Escort ve Jigolo İlanları - Kuzey Kıbrıs | KKTCX Tüm Partnerler',
+        description: 'Kuzey Kıbrıs escort, jigolo ve partner ilanları. Bayan escort, erkek partner, VIP refakatçi. Girne, Lefkoşa, Gazimağusa, İskele, Güzelyurt. Fotoğraflı, doğrulanmış profiller.',
       },
       partnerDetail: {
-        titleSuffix: '- Eskort Profili | KKTCX',
-        descriptionPrefix: 'profili. Kuzey Kıbrıs\'ta güvenilir escort ve partner hizmeti.',
+        titleSuffix: '- Escort Profili | KKTCX Kuzey Kıbrıs',
+        descriptionPrefix: 'escort profili. Kuzey Kıbrıs\'ta güvenilir, doğrulanmış partner.',
       },
       contact: {
-        title: 'İletişim - KKTCX | Kuzey Kıbrıs Escort Platformu',
-        description: 'KKTCX ile iletişime geçin. Kuzey Kıbrıs escort ve partner platformu destek hattı.',
+        title: 'İletişim - KKTCX | Kuzey Kıbrıs Escort Platform Destek 7/24',
+        description: 'KKTCX ile 7/24 iletişime geçin. Kuzey Kıbrıs\'ın 1 numaralı escort platformu müşteri hizmetleri. WhatsApp, Telegram, E-posta desteği.',
       },
       about: {
-        title: 'Hakkımızda - KKTCX | Kuzey Kıbrıs\'ın Güvenilir Platformu',
-        description: 'KKTCX, Kuzey Kıbrıs\'ın en güvenilir escort ve partner platformudur. Güvenlik, gizlilik ve kaliteli hizmet önceliğimizdir.',
+        title: 'Hakkımızda - KKTCX | Kuzey Kıbrıs En Güvenilir Escort Sitesi',
+        description: 'KKTCX, 2024\'ten beri Kuzey Kıbrıs\'ın en güvenilir escort ve partner platformu. Güvenlik, gizlilik, kaliteli hizmet garantisi. 500+ doğrulanmış profil.',
       },
     },
     cities: {
-      girne: 'Girne Eskort ve Partner İlanları - KKTCX',
-      lefkosa: 'Lefkoşa Eskort ve Partner İlanları - KKTCX',
-      gazimagusa: 'Gazimağusa Eskort ve Partner İlanları - KKTCX',
-      guzelyurt: 'Güzelyurt Eskort ve Partner İlanları - KKTCX',
-      iskele: 'İskele Eskort ve Partner İlanları - KKTCX',
-      lefke: 'Lefke Eskort ve Partner İlanları - KKTCX',
+      girne: 'Girne Escort ve Jigolo İlanları | KKTCX - Kyrenia VIP Partner',
+      lefkosa: 'Lefkoşa Escort ve Jigolo İlanları | KKTCX - Nicosia Partner',
+      gazimagusa: 'Gazimağusa Escort ve Jigolo İlanları | KKTCX - Famagusta',
+      guzelyurt: 'Güzelyurt Escort ve Partner İlanları | KKTCX - Morphou',
+      iskele: 'İskele Escort ve Partner İlanları | KKTCX - Long Beach',
+      lefke: 'Lefke Escort ve Partner İlanları | KKTCX',
     },
   },
   en: {
