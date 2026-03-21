@@ -9,6 +9,11 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 import logging
 import uuid
+import os
+import sys
+
+# Add backend directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Configuration
 from config import CORS_ORIGINS, APP_NAME
