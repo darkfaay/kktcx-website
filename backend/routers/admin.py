@@ -276,10 +276,21 @@ async def admin_get_appointments(
         if profile:
             apt["partner_name"] = profile.get("nickname", "Partner")
             apt["partner_city"] = profile.get("city_name", "")
-            if profile.get("cover_image"):
-                apt["partner_photo"] = f"/api/files/{profile['cover_image'].get('path', '')}"
+            # Check for photo in multiple places - prefer url over path
+            if profile.get("photo_url"):
+                apt["partner_photo"] = profile["photo_url"]
+            elif profile.get("cover_url"):
+                apt["partner_photo"] = profile["cover_url"]
+            elif profile.get("cover_image") and profile["cover_image"].get("url"):
+                apt["partner_photo"] = profile["cover_image"]["url"]
+            elif profile.get("cover_image") and profile["cover_image"].get("path"):
+                apt["partner_photo"] = f"/api/files/{profile['cover_image']['path']}"
             elif profile.get("images") and len(profile["images"]) > 0:
-                apt["partner_photo"] = f"/api/files/{profile['images'][0].get('path', '')}"
+                img = profile["images"][0]
+                if img.get("url"):
+                    apt["partner_photo"] = img["url"]
+                elif img.get("path"):
+                    apt["partner_photo"] = f"/api/files/{img['path']}"
         
         user = await db.users.find_one({"id": apt.get("user_id")}, {"_id": 0, "password": 0})
         if user:
