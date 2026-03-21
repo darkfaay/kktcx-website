@@ -234,7 +234,7 @@ async def create_partner_profile(data: PartnerProfileCreate, user: dict = Depend
         "whatsapp": data.whatsapp,
         "telegram": data.telegram,
         "slug": slug,
-        "status": "draft",
+        "status": "pending",  # Directly set to pending for admin review
         "is_verified": False,
         "is_featured": False,
         "is_vitrin": False,
@@ -284,7 +284,7 @@ async def get_own_partner_profile(user: dict = Depends(require_partner)):
 
 
 @router.post("/partner/submit-for-review")
-async def submit_for_review(user: dict = Depends(require_partner)):
+async def submit_for_review(user: dict = Depends(get_current_user)):
     """Submit profile for review"""
     profile = await db.partner_profiles.find_one({"user_id": user["id"]})
     if not profile:
