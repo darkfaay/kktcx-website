@@ -545,11 +545,22 @@ const PartnerDetailPage = () => {
                   Konuşulan Diller
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {profile.languages.map((lng) => (
-                    <span key={lng} className="px-4 py-2 rounded-full bg-white/10 text-white/70">
-                      {lng}
-                    </span>
-                  ))}
+                  {profile.languages.map((lng) => {
+                    const languageNames = {
+                      tr: 'Türkçe',
+                      en: 'English',
+                      ru: 'Русский',
+                      de: 'Deutsch',
+                      el: 'Ελληνικά',
+                      fr: 'Français',
+                      ar: 'العربية'
+                    };
+                    return (
+                      <span key={lng} className="px-4 py-2 rounded-full bg-white/10 text-white/70">
+                        {languageNames[lng] || lng}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             )}
