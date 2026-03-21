@@ -15,25 +15,43 @@ const DashboardLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [stats, setStats] = useState({ views: 0, favorites: 0, messages: 0 });
+  const [stats, setStats] = useState({ views: 0, favorites: 0, messages: 0, unread_messages: 0 });
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const isPartner = user?.role === 'partner' || user?.role === 'admin';
   const basePath = isPartner ? `/${lang}/partner` : `/${lang}/kullanici`;
 
   useEffect(() => {
-    if (isPartner) {
-      fetchStats();
-    }
-  }, [isPartner]);
+    fetchStats();
+    fetchUnreadCount();
+    
+    // Refresh unread count every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const fetchStats = async () => {
     try {
-      const response = await api.get('/partner/stats');
-      if (response.data) {
-        setStats(response.data);
+      if (isPartner) {
+        const response = await api.get('/partner/stats');
+        if (response.data) {
+          setStats(response.data);
+          setUnreadCount(response.data.unread_messages || 0);
+        }
       }
     } catch (error) {
       console.log('Stats not available');
+    }
+  };
+
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await api.get('/partner/unread-count');
+      if (response.data) {
+        setUnreadCount(response.data.unread_count || 0);
+      }
+    } catch (error) {
+      console.log('Unread count not available');
     }
   };
 
@@ -169,9 +187,13 @@ const DashboardLayout = () => {
                 </p>
                 <p className="text-white/40 text-xs">{item.desc}</p>
               </div>
-              {item.badge && (
+              {item.badge && item.path === '/mesajlar' && unreadCount > 0 ? (
+                <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#E91E63] text-white text-xs font-bold flex items-center justify-center shadow-lg shadow-[#E91E63]/50">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              ) : item.badge ? (
                 <span className="w-2.5 h-2.5 rounded-full bg-[#D4AF37] animate-pulse shadow-lg shadow-[#D4AF37]/50"></span>
-              )}
+              ) : null}
               <ChevronRight className={`w-4 h-4 transition-all ${
                 isActive(item.path) ? 'text-[#D4AF37] opacity-100' : 'text-white/20 opacity-0 group-hover:opacity-100'
               }`} />
@@ -299,9 +321,13 @@ const DashboardLayout = () => {
                       <span className="font-medium">{item.label}</span>
                       <p className="text-white/40 text-xs">{item.desc}</p>
                     </div>
-                    {item.badge && (
+                    {item.badge && item.path === '/mesajlar' && unreadCount > 0 ? (
+                      <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#E91E63] text-white text-xs font-bold flex items-center justify-center">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    ) : item.badge ? (
                       <span className="w-2 h-2 rounded-full bg-[#D4AF37]"></span>
-                    )}
+                    ) : null}
                   </Link>
                 ))}
               </nav>

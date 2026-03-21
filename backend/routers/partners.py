@@ -277,6 +277,51 @@ async def update_partner_profile(data: PartnerProfileUpdate, user: dict = Depend
     return {"success": True}
 
 
+@router.get("/partner/stats")
+async def get_partner_stats(user: dict = Depends(require_partner)):
+    """Get partner dashboard stats including views, favorites, and messages"""
+    profile = await db.partner_profiles.find_one({"user_id": user["id"]}, {"_id": 0})
+    if not profile:
+        return {"views": 0, "favorites": 0, "messages": 0, "unread_messages": 0}
+    
+    # Get views count
+    views = profile.get("view_count", 0)
+    
+    # Get favorites count (how many users favorited this partner)
+    favorites = await db.favorites.count_documents({"profile_id": profile.get("id")})
+    
+    # Get total messages count
+    total_messages = await db.messages.count_documents({
+        "$or": [
+            {"sender_id": user["id"]},
+            {"receiver_id": user["id"]}
+        ]
+    })
+    
+    # Get unread messages count
+    unread_messages = await db.messages.count_documents({
+        "receiver_id": user["id"],
+        "read": False
+    })
+    
+    return {
+        "views": views,
+        "favorites": favorites,
+        "messages": total_messages,
+        "unread_messages": unread_messages
+    }
+
+
+@router.get("/partner/unread-count")
+async def get_unread_message_count(user: dict = Depends(get_current_user)):
+    """Get unread message count for current user"""
+    unread = await db.messages.count_documents({
+        "receiver_id": user["id"],
+        "read": False
+    })
+    return {"unread_count": unread}
+
+
 @router.get("/partner/profile")
 async def get_own_partner_profile(user: dict = Depends(require_partner)):
     """Get own partner profile"""

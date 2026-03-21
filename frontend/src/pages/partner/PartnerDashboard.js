@@ -24,7 +24,7 @@ const PartnerDashboard = () => {
 
   useEffect(() => {
     fetchProfile();
-    fetchConversations();
+    fetchStats();
     fetchAppointments();
   }, []);
 
@@ -32,11 +32,6 @@ const PartnerDashboard = () => {
     try {
       const response = await api.get('/partner/profile');
       setProfile(response.data);
-      setStats(prev => ({ 
-        ...prev, 
-        views: response.data.view_count || 0,
-        favorites: response.data.favorite_count || 0
-      }));
     } catch (error) {
       console.log('No profile yet');
     } finally {
@@ -44,13 +39,19 @@ const PartnerDashboard = () => {
     }
   };
 
-  const fetchConversations = async () => {
+  const fetchStats = async () => {
     try {
-      const response = await api.get('/conversations');
-      const unreadCount = response.data.reduce((sum, c) => sum + (c.unread_count || 0), 0);
-      setStats(prev => ({ ...prev, messages: unreadCount }));
+      const response = await api.get('/partner/stats');
+      if (response.data) {
+        setStats(prev => ({ 
+          ...prev, 
+          views: response.data.views || 0,
+          favorites: response.data.favorites || 0,
+          messages: response.data.unread_messages || 0
+        }));
+      }
     } catch (error) {
-      console.error('Failed to fetch conversations:', error);
+      console.error('Failed to fetch stats:', error);
     }
   };
 
