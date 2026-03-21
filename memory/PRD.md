@@ -519,6 +519,14 @@ Backend'e eksik filtre parametreleri eklendi ve frontend-backend parametre uyumu
 - [ ] Yeni font entegrasyonu (Playfair Display, Manrope)
 - [ ] Dashboard kartları yeniden tasarla
 
+### ✅ P1 - Partner Randevu Yönetimi UI (Tamamlandı - 21 Mart 2026)
+- ✅ **Liste Görünümü:** Randevu listesi, durum filtreleme, onaylama/reddetme
+- ✅ **Takvim Görünümü:** Aylık takvim, randevulu günlerin işaretlenmesi, tarih seçimi
+- ✅ **Müsaitlik Ayarları:** Çalışma saatleri, slot süresi, aralar, çalışma günleri, otomatik onay
+- ✅ **Süre ve Fiyat Seçenekleri:** Özelleştirilebilir süre/fiyat paketleri, ekleme/silme
+- ✅ **Randevu Detay Dialogu:** Müşteri bilgileri, iletişim bilgileri, notlar
+- **Dosyalar:** `/app/frontend/src/pages/partner/PartnerAppointments.js`
+
 ### P2 - Gelecek Özellikler
 - [ ] PostgreSQL'e geçiş
 - [ ] react-i18next ile tam i18n desteği

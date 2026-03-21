@@ -240,6 +240,8 @@ async def cancel_appointment(appointment_id: str, user: dict = Depends(get_curre
 @router.get("/partner/appointments")
 async def get_partner_appointments(
     status: Optional[str] = None,
+    page: int = 1,
+    limit: int = 50,
     user: dict = Depends(require_partner)
 ):
     """Get partner's appointments"""
@@ -251,7 +253,10 @@ async def get_partner_appointments(
     if status:
         query["status"] = status
     
-    appointments = await db.appointments.find(query, {"_id": 0}).sort("date", -1).to_list(100)
+    total = await db.appointments.count_documents(query)
+    skip = (page - 1) * limit
+    
+    appointments = await db.appointments.find(query, {"_id": 0}).sort("date", -1).skip(skip).limit(limit).to_list(limit)
     
     # Enrich with user info
     for apt in appointments:
