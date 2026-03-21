@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, LanguageProvider, useAuth } from './context/AppContext';
 import { Toaster } from './components/ui/sonner';
 import AgeVerification from './components/AgeVerification';
@@ -192,15 +193,17 @@ function AppRoutes() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <LanguageProvider>
-        <AuthProvider>
-          <AgeVerification />
-          <AppRoutes />
-          <Toaster position="top-right" richColors />
-        </AuthProvider>
-      </LanguageProvider>
-    </BrowserRouter>
+    <HelmetProvider>
+      <BrowserRouter>
+        <LanguageProvider>
+          <AuthProvider>
+            <AgeVerification />
+            <AppRoutes />
+            <Toaster position="top-right" richColors />
+          </AuthProvider>
+        </LanguageProvider>
+      </BrowserRouter>
+    </HelmetProvider>
   );
 }
 

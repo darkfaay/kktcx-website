@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import PageBanner from '../components/PageBanner';
+import { SEO, generateStructuredData } from '../components/SEO';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -390,6 +391,11 @@ const HomePage = () => {
 
   return (
     <div className="min-h-screen">
+      <SEO 
+        page="home" 
+        structuredData={generateStructuredData.website(lang)}
+      />
+      
       {/* Hero Section - Sexy & Modern */}
       <section className="relative min-h-[100vh] flex items-center justify-center overflow-hidden">
         {/* Animated Background */}

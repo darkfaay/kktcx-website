@@ -25,6 +25,7 @@ import {
 import { Checkbox } from '../components/ui/checkbox';
 import { Slider } from '../components/ui/slider';
 import PageBanner from '../components/PageBanner';
+import { SEO } from '../components/SEO';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -461,6 +462,11 @@ const PartnersPage = () => {
 
   return (
     <div className="min-h-screen">
+      <SEO 
+        page="partners" 
+        city={citySlug}
+      />
+      
       {/* Dynamic Page Banner */}
       <PageBanner variant="listing" height="h-[180px] md:h-[240px]" />
       

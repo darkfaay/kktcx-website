@@ -1,0 +1,43 @@
+# KKTCX Robots.txt
+# https://kktcx.com
+
+User-agent: *
+Allow: /
+
+# Allow all major search engines
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Yandex
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /api/
+Disallow: /partner/
+Disallow: /kullanici/
+Disallow: /*?*token=
+Disallow: /*?*password=
+
+# Allow public pages
+Allow: /tr/
+Allow: /en/
+Allow: /ru/
+Allow: /de/
+Allow: /el/
+Allow: /tr/partnerler
+Allow: /en/partners
+Allow: /tr/partner/
+Allow: /en/partner/
+
+# Crawl delay for politeness
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: https://kktcx.com/sitemap.xml

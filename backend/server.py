@@ -6,6 +6,7 @@ from fastapi import FastAPI, WebSocket, Response, Query, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from contextlib import asynccontextmanager
+from datetime import datetime
 import logging
 
 # Configuration
@@ -219,39 +220,78 @@ Sitemap: https://kktcx.com/sitemap.xml
 """
 
 
+@app.get("/api/sitemap.xml", response_class=PlainTextResponse)
 @app.get("/sitemap.xml", response_class=PlainTextResponse)
 async def sitemap_xml():
-    """Generate sitemap.xml"""
+    """Generate comprehensive multilingual sitemap.xml"""
     base_url = "https://kktcx.com"
+    languages = ["tr", "en", "ru", "de", "el"]
+    today = datetime.now().strftime("%Y-%m-%d")
     
-    urls = [
-        {"loc": base_url, "priority": "1.0"},
-        {"loc": f"{base_url}/hakkimizda", "priority": "0.8"},
-        {"loc": f"{base_url}/iletisim", "priority": "0.7"},
-        {"loc": f"{base_url}/partnerler", "priority": "0.9"},
+    urls = []
+    
+    # Static pages for all languages
+    static_pages = [
+        {"path": "", "priority": "1.0", "changefreq": "daily"},
+        {"path": "partnerler", "priority": "0.9", "changefreq": "hourly"},
+        {"path": "hakkimizda", "priority": "0.6", "changefreq": "monthly"},
+        {"path": "iletisim", "priority": "0.6", "changefreq": "monthly"},
     ]
     
-    # Add city pages
+    for page in static_pages:
+        for lang in languages:
+            path = f"/{lang}/{page['path']}" if page['path'] else f"/{lang}"
+            urls.append({
+                "loc": f"{base_url}{path}",
+                "lastmod": today,
+                "priority": page['priority'],
+                "changefreq": page['changefreq']
+            })
+    
+    # Add city pages for all languages
     cities = await db.cities.find({}, {"_id": 0, "slug": 1}).to_list(100)
     for city in cities:
-        urls.append({"loc": f"{base_url}/partnerler/{city['slug']}", "priority": "0.8"})
+        for lang in languages:
+            urls.append({
+                "loc": f"{base_url}/{lang}/partnerler?city={city['slug']}",
+                "lastmod": today,
+                "priority": "0.8",
+                "changefreq": "daily"
+            })
     
-    # Add approved partner profiles
+    # Add approved partner profiles for all languages
     profiles = await db.partner_profiles.find(
         {"status": "approved"},
-        {"_id": 0, "slug": 1}
+        {"_id": 0, "slug": 1, "updated_at": 1}
     ).to_list(1000)
-    for profile in profiles:
-        urls.append({"loc": f"{base_url}/partner/{profile['slug']}", "priority": "0.6"})
     
+    for profile in profiles:
+        lastmod = profile.get('updated_at', today)
+        if isinstance(lastmod, str):
+            lastmod = lastmod[:10]
+        else:
+            lastmod = today
+            
+        for lang in languages:
+            urls.append({
+                "loc": f"{base_url}/{lang}/partner/{profile['slug']}",
+                "lastmod": lastmod,
+                "priority": "0.7",
+                "changefreq": "weekly"
+            })
+    
+    # Generate XML
     xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n'
-    xml_content += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    xml_content += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
+    xml_content += 'xmlns:xhtml="http://www.w3.org/1999/xhtml">\n'
     
     for url in urls:
-        xml_content += f'  <url>\n'
+        xml_content += '  <url>\n'
         xml_content += f'    <loc>{url["loc"]}</loc>\n'
+        xml_content += f'    <lastmod>{url["lastmod"]}</lastmod>\n'
+        xml_content += f'    <changefreq>{url["changefreq"]}</changefreq>\n'
         xml_content += f'    <priority>{url["priority"]}</priority>\n'
-        xml_content += f'  </url>\n'
+        xml_content += '  </url>\n'
     
     xml_content += '</urlset>'
     

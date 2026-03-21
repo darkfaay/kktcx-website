@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
+import { SEO, generateStructuredData } from '../components/SEO';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -289,8 +290,18 @@ const PartnerDetailPage = () => {
         })).filter(img => img.url)
       : [{ url: profilePhoto, isBlurred: false }];
 
+  // Generate profile image for SEO
+  const seoImage = profile.cover_image?.url || profile.images?.[0]?.url || profilePhoto;
+
   return (
     <div className="min-h-screen pb-24 md:pb-0" data-testid="partner-detail-page">
+      <SEO 
+        partner={profile}
+        image={seoImage}
+        type="profile"
+        structuredData={generateStructuredData.profile(profile, lang)}
+      />
+      
       {/* Lightbox Modal */}
       {lightboxOpen && (
         <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center" onClick={closeLightbox}>
