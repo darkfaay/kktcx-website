@@ -101,6 +101,72 @@ async def get_file(path: str, auth: str = Query(None), authorization: str = Head
         return Response(status_code=404)
 
 
+# ==================== HOMEPAGE ENDPOINT ====================
+
+@app.get("/api/homepage")
+async def get_homepage_data(lang: str = "tr"):
+    """Get homepage data including vitrin profiles, cities, and categories"""
+    # Get homepage vitrin profiles
+    homepage_vitrin = await db.partner_profiles.find(
+        {"status": "approved", "is_homepage_vitrin": True},
+        {"_id": 0}
+    ).sort("priority_score", -1).limit(8).to_list(8)
+    
+    # Get regular vitrin profiles
+    vitrin_profiles = await db.partner_profiles.find(
+        {"status": "approved", "is_vitrin": True, "is_homepage_vitrin": {"$ne": True}},
+        {"_id": 0}
+    ).sort("priority_score", -1).limit(12).to_list(12)
+    
+    # Get latest approved profiles
+    latest_profiles = await db.partner_profiles.find(
+        {"status": "approved"},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(12).to_list(12)
+    
+    # Get cities
+    cities = await db.cities.find({}, {"_id": 0}).to_list(100)
+    for city in cities:
+        city["name"] = city.get(f"name_{lang}", city.get("name_en", ""))
+        # Count profiles per city
+        city["profile_count"] = await db.partner_profiles.count_documents({
+            "status": "approved", 
+            "$or": [{"city_id": city.get("id")}, {"city_id": city.get("slug")}]
+        })
+    
+    # Get categories
+    categories = await db.categories.find({}, {"_id": 0}).to_list(100)
+    for cat in categories:
+        cat["name"] = cat.get(f"name_{lang}", cat.get("name_en", ""))
+    
+    # Enrich profiles with city names
+    for profile_list in [homepage_vitrin, vitrin_profiles, latest_profiles]:
+        for profile in profile_list:
+            if profile.get("city_id"):
+                city = await db.cities.find_one(
+                    {"$or": [{"id": profile["city_id"]}, {"slug": profile["city_id"]}]}, 
+                    {"_id": 0}
+                )
+                if city:
+                    profile["city_name"] = city.get(f"name_{lang}", city.get("name_en", ""))
+    
+    # Get stats
+    total_partners = await db.partner_profiles.count_documents({"status": "approved"})
+    total_cities = len([c for c in cities if c.get("profile_count", 0) > 0])
+    
+    return {
+        "homepage_vitrin": homepage_vitrin,
+        "vitrin_profiles": vitrin_profiles,
+        "latest_profiles": latest_profiles,
+        "cities": cities,
+        "categories": categories,
+        "stats": {
+            "total_partners": total_partners,
+            "total_cities": total_cities
+        }
+    }
+
+
 # ==================== SEO ENDPOINTS ====================
 
 @app.get("/robots.txt", response_class=PlainTextResponse)
