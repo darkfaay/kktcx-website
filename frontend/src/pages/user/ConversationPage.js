@@ -227,8 +227,8 @@ const ConversationPage = () => {
     navigate(basePath);
   };
 
-  const avatar = otherUser?.avatar 
-    ? `${API_URL}/api/files/${otherUser.avatar}`
+  const avatarUrl = otherUser?.avatar 
+    ? (otherUser.avatar.startsWith('http') ? otherUser.avatar : `${API_URL}/api/files/${otherUser.avatar}`)
     : null;
 
   if (loading) {
@@ -254,8 +254,8 @@ const ConversationPage = () => {
         </Button>
         
         <div className="w-10 h-10 rounded-full overflow-hidden bg-[#D4AF37]/20 flex-shrink-0 relative">
-          {avatar ? (
-            <img src={avatar} alt="" className="w-full h-full object-cover" />
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <User className="w-5 h-5 text-[#D4AF37]" />
@@ -294,8 +294,21 @@ const ConversationPage = () => {
             return (
               <div
                 key={message.id}
-                className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
+                className={`flex items-end gap-2 ${isMine ? 'justify-end' : 'justify-start'}`}
               >
+                {/* Avatar for other user's messages */}
+                {!isMine && (
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-[#D4AF37]/20 flex-shrink-0 mb-1">
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <User className="w-4 h-4 text-[#D4AF37]" />
+                      </div>
+                    )}
+                  </div>
+                )}
+                
                 <div
                   className={isMine ? 'chat-bubble-sent' : 'chat-bubble-received'}
                   data-testid={`message-${message.id}`}
