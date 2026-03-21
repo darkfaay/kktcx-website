@@ -62,9 +62,9 @@ async def get_public_availability(
                 "partner_id": profile_id,
                 "status": {"$in": ["pending", "confirmed"]},
                 "date": {"$gte": start_date.isoformat(), "$lt": end_date.isoformat()}
-            }, {"_id": 0, "date": 1, "time": 1, "duration_minutes": 1}).to_list(100)
+            }, {"_id": 0, "date": 1, "time_slot": 1, "duration_minutes": 1}).to_list(100)
             
-            blocked_slots = [{"date": a["date"][:10], "time": a["time"]} for a in appointments]
+            blocked_slots = [{"date": a["date"][:10], "time": a["time_slot"]} for a in appointments]
         except:
             pass
     

@@ -81,8 +81,8 @@ const BookAppointmentPage = () => {
       const timeStr = `${String(currentHour).padStart(2, '0')}:${String(currentMin).padStart(2, '0')}`;
       
       // Check if slot is booked
-      const isBooked = availability.booked_slots?.some(
-        s => s.date === selectedDate && s.time_slot === timeStr
+      const isBooked = availability.blocked_slots?.some(
+        s => s.date === selectedDate && s.time === timeStr
       );
       
       slots.push({ time: timeStr, booked: isBooked });
@@ -125,7 +125,7 @@ const BookAppointmentPage = () => {
       const isCurrentMonth = date.getMonth() === month;
       
       // Check if fully booked
-      const dayBookings = availability?.booked_slots?.filter(s => s.date === dateStr) || [];
+      const dayBookings = availability?.blocked_slots?.filter(s => s.date === dateStr) || [];
       const totalSlots = generateTimeSlots().length;
       const isFullyBooked = dayBookings.length >= totalSlots;
       
