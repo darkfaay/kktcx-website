@@ -32,7 +32,9 @@ import PartnerDashboard from './pages/partner/PartnerDashboard';
 import PartnerProfileEdit from './pages/partner/PartnerProfileEdit';
 import PartnerPhotos from './pages/partner/PartnerPhotos';
 import PartnerPackages from './pages/partner/PartnerPackages';
+import PartnerAppointments from './pages/partner/PartnerAppointments';
 import PaymentSuccess from './pages/partner/PaymentSuccess';
+import BookAppointmentPage from './pages/BookAppointmentPage';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -47,6 +49,7 @@ import AdminSEO from './pages/admin/AdminSEO';
 import AdminContent from './pages/admin/AdminContent';
 import AdminMedia from './pages/admin/AdminMedia';
 import AdminSMS from './pages/admin/AdminSMS';
+import AdminPartners from './pages/admin/AdminPartners';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, roles = [] }) => {
@@ -125,10 +128,18 @@ function AppRoutes() {
             <Route path="profil" element={<PartnerProfileEdit />} />
             <Route path="fotograflar" element={<PartnerPhotos />} />
             <Route path="paketler" element={<PartnerPackages />} />
+            <Route path="randevular" element={<PartnerAppointments />} />
             <Route path="mesajlar" element={<MessagesPage />} />
             <Route path="mesajlar/:conversationId" element={<ConversationPage />} />
             <Route path="payment/success" element={<PaymentSuccess />} />
           </Route>
+          
+          {/* Appointment Booking Route */}
+          <Route path="partner/:slug/randevu" element={
+            <ProtectedRoute>
+              <PublicLayout><BookAppointmentPage /></PublicLayout>
+            </ProtectedRoute>
+          } />
           
           {/* Admin Routes */}
           <Route path="admin" element={
@@ -141,7 +152,7 @@ function AppRoutes() {
             <Route path="seo" element={<AdminSEO />} />
             <Route path="icerik" element={<AdminContent />} />
             <Route path="kullanicilar" element={<AdminUsers />} />
-            <Route path="partnerler" element={<AdminUsers />} />
+            <Route path="partnerler" element={<AdminPartners />} />
             <Route path="profiller" element={<AdminProfiles />} />
             <Route path="sehirler" element={<AdminCities />} />
             <Route path="kategoriler" element={<AdminCategories />} />

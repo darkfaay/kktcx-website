@@ -24,6 +24,7 @@ const DashboardLayout = () => {
     { path: '', icon: Home, label: 'Dashboard', desc: 'Genel bakış' },
     { path: '/profil', icon: User, label: 'Profilim', desc: 'Profil düzenle' },
     { path: '/fotograflar', icon: Image, label: 'Fotoğraflar', desc: 'Galeri yönet' },
+    { path: '/randevular', icon: Calendar, label: 'Randevular', desc: 'Randevu yönetimi', badge: true },
     { path: '/paketler', icon: Package, label: 'Premium', desc: 'Paketler & öne çıkar' },
     { path: '/mesajlar', icon: MessageCircle, label: 'Mesajlar', desc: 'Gelen kutusu', badge: true },
   ];

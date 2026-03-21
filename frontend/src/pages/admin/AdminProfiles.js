@@ -149,11 +149,22 @@ const AdminProfiles = () => {
   };
 
   const getProfileImage = (profile) => {
+    // First check photo_url and cover_url (most profiles use these)
+    if (profile.photo_url) {
+      return profile.photo_url;
+    }
+    if (profile.cover_url) {
+      return profile.cover_url;
+    }
+    // Then check for file paths
     if (profile.cover_image?.path) {
       return `${API_URL}/api/files/${profile.cover_image.path}`;
     }
     if (profile.images?.[0]?.path) {
       return `${API_URL}/api/files/${profile.images[0].path}`;
+    }
+    if (profile.images?.[0]?.url) {
+      return profile.images[0].url;
     }
     return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop';
   };

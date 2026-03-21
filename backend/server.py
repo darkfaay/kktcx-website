@@ -1971,6 +1971,215 @@ async def root():
 async def health():
     return {"status": "healthy"}
 
+# ==================== APPOINTMENT ENDPOINTS ====================
+
+class AppointmentStatus:
+    PENDING = "pending"
+    CONFIRMED = "confirmed"
+    REJECTED = "rejected"
+    CANCELLED = "cancelled"
+    COMPLETED = "completed"
+
+class AppointmentCreate(BaseModel):
+    partner_id: str
+    date: str  # ISO date string YYYY-MM-DD
+    time_slot: str  # e.g., "14:00"
+    duration_id: str  # Reference to partner's duration option
+    notes: Optional[str] = None
+
+class AvailabilitySettings(BaseModel):
+    working_days: List[int] = [1, 2, 3, 4, 5, 6]  # 0=Sunday, 1=Monday, etc.
+    working_hours_start: str = "10:00"
+    working_hours_end: str = "22:00"
+    slot_duration: int = 60  # minutes
+    break_between_slots: int = 15  # minutes
+    auto_confirm: bool = False  # If True, appointments are auto-confirmed
+    blocked_dates: List[str] = []  # ISO date strings
+
+class DurationOption(BaseModel):
+    id: str
+    label: str  # e.g., "1 Saat", "2 Saat", "Yarım Gün"
+    minutes: int
+    price: Optional[float] = None
+
+@api_router.get("/availability/{partner_id}")
+async def get_partner_availability(
+    partner_id: str,
+    date: Optional[str] = None,
+    month: Optional[str] = None
+):
+    """Get partner's availability settings and booked slots"""
+    profile = await db.partner_profiles.find_one({"id": partner_id}, {"_id": 0})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Partner not found")
+    
+    settings = profile.get("availability_settings", {
+        "working_days": [1, 2, 3, 4, 5, 6],
+        "working_hours_start": "10:00",
+        "working_hours_end": "22:00",
+        "slot_duration": 60,
+        "break_between_slots": 15,
+        "auto_confirm": False,
+        "blocked_dates": []
+    })
+    
+    durations = profile.get("duration_options", [
+        {"id": "1h", "label": "1 Saat", "minutes": 60, "price": profile.get("hourly_rate", 100)},
+        {"id": "2h", "label": "2 Saat", "minutes": 120, "price": (profile.get("hourly_rate", 100) * 1.8)},
+        {"id": "half_day", "label": "Yarım Gün (4 Saat)", "minutes": 240, "price": (profile.get("hourly_rate", 100) * 3.5)},
+        {"id": "full_day", "label": "Tam Gün (8 Saat)", "minutes": 480, "price": (profile.get("hourly_rate", 100) * 6)}
+    ])
+    
+    query = {"partner_id": partner_id, "status": {"$in": ["pending", "confirmed"]}}
+    if date:
+        query["date"] = date
+    elif month:
+        query["date"] = {"$regex": f"^{month}"}
+    
+    booked_slots = []
+    cursor = db.appointments.find(query, {"_id": 0, "date": 1, "time_slot": 1, "duration_minutes": 1, "status": 1})
+    async for appt in cursor:
+        booked_slots.append(appt)
+    
+    return {"partner_id": partner_id, "settings": settings, "durations": durations, "booked_slots": booked_slots}
+
+@api_router.post("/appointments")
+async def create_appointment(data: AppointmentCreate, user: dict = Depends(get_current_user)):
+    """Create a new appointment request"""
+    profile = await db.partner_profiles.find_one({"id": data.partner_id}, {"_id": 0})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Partner not found")
+    
+    durations = profile.get("duration_options", [
+        {"id": "1h", "label": "1 Saat", "minutes": 60, "price": profile.get("hourly_rate", 100)},
+        {"id": "2h", "label": "2 Saat", "minutes": 120, "price": (profile.get("hourly_rate", 100) * 1.8)},
+        {"id": "half_day", "label": "Yarım Gün (4 Saat)", "minutes": 240, "price": (profile.get("hourly_rate", 100) * 3.5)},
+        {"id": "full_day", "label": "Tam Gün (8 Saat)", "minutes": 480, "price": (profile.get("hourly_rate", 100) * 6)}
+    ])
+    
+    duration = next((d for d in durations if d["id"] == data.duration_id), None)
+    if not duration:
+        raise HTTPException(status_code=400, detail="Invalid duration option")
+    
+    existing = await db.appointments.find_one({
+        "partner_id": data.partner_id,
+        "date": data.date,
+        "time_slot": data.time_slot,
+        "status": {"$in": ["pending", "confirmed"]}
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="This time slot is already booked")
+    
+    settings = profile.get("availability_settings", {"auto_confirm": False})
+    status = AppointmentStatus.CONFIRMED if settings.get("auto_confirm") else AppointmentStatus.PENDING
+    
+    appointment_id = str(uuid.uuid4())
+    appointment = {
+        "id": appointment_id,
+        "user_id": user["id"],
+        "partner_id": data.partner_id,
+        "date": data.date,
+        "time_slot": data.time_slot,
+        "duration_minutes": duration["minutes"],
+        "duration_label": duration["label"],
+        "price": duration.get("price"),
+        "notes": data.notes,
+        "status": status,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": None
+    }
+    
+    await db.appointments.insert_one(appointment)
+    return {k: v for k, v in appointment.items() if k != "_id"}
+
+@api_router.get("/appointments")
+async def get_user_appointments(status: Optional[str] = None, page: int = 1, limit: int = 20, user: dict = Depends(get_current_user)):
+    """Get appointments for current user"""
+    skip = (page - 1) * limit
+    is_partner = user.get("role") == "partner"
+    profile = None
+    if is_partner:
+        profile = await db.partner_profiles.find_one({"user_id": user["id"]}, {"_id": 0, "id": 1})
+    
+    if is_partner and profile:
+        query = {"$or": [{"user_id": user["id"]}, {"partner_id": profile["id"]}]}
+    else:
+        query = {"user_id": user["id"]}
+    
+    if status:
+        query["status"] = status
+    
+    total = await db.appointments.count_documents(query)
+    cursor = db.appointments.find(query, {"_id": 0}).sort("date", -1).skip(skip).limit(limit)
+    appointments = await cursor.to_list(limit)
+    
+    enriched = []
+    for appt in appointments:
+        partner = await db.partner_profiles.find_one({"id": appt["partner_id"]}, {"_id": 0, "nickname": 1, "photo_url": 1})
+        if partner:
+            appt["partner_name"] = partner.get("nickname", "")
+            appt["partner_photo"] = partner.get("photo_url", "")
+        if is_partner:
+            user_info = await db.users.find_one({"id": appt["user_id"]}, {"_id": 0, "name": 1, "email": 1})
+            if user_info:
+                appt["user_name"] = user_info.get("name", user_info.get("email", "").split("@")[0])
+        enriched.append(appt)
+    
+    return {"appointments": enriched, "total": total, "page": page, "limit": limit, "pages": (total + limit - 1) // limit}
+
+@api_router.put("/appointments/{appointment_id}/status")
+async def update_appointment_status(appointment_id: str, status: str, user: dict = Depends(get_current_user)):
+    """Update appointment status"""
+    if status not in [AppointmentStatus.CONFIRMED, AppointmentStatus.REJECTED, AppointmentStatus.CANCELLED]:
+        raise HTTPException(status_code=400, detail="Invalid status")
+    
+    appointment = await db.appointments.find_one({"id": appointment_id}, {"_id": 0})
+    if not appointment:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    
+    is_partner = user.get("role") == "partner"
+    profile = None
+    if is_partner:
+        profile = await db.partner_profiles.find_one({"user_id": user["id"]}, {"_id": 0, "id": 1})
+    
+    can_modify = False
+    if status == AppointmentStatus.CANCELLED and appointment["user_id"] == user["id"]:
+        can_modify = True
+    elif status in [AppointmentStatus.CONFIRMED, AppointmentStatus.REJECTED] and profile and profile["id"] == appointment["partner_id"]:
+        can_modify = True
+    
+    if not can_modify:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    await db.appointments.update_one({"id": appointment_id}, {"$set": {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}})
+    return {"success": True, "status": status}
+
+@api_router.put("/partner/availability")
+async def update_partner_availability(settings: AvailabilitySettings, user: dict = Depends(get_current_user)):
+    """Update partner's availability settings"""
+    if user.get("role") != "partner":
+        raise HTTPException(status_code=403, detail="Only partners can update availability")
+    
+    profile = await db.partner_profiles.find_one({"user_id": user["id"]}, {"_id": 0, "id": 1})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Partner profile not found")
+    
+    await db.partner_profiles.update_one({"id": profile["id"]}, {"$set": {"availability_settings": settings.dict()}})
+    return {"success": True}
+
+@api_router.put("/partner/durations")
+async def update_partner_durations(durations: List[DurationOption], user: dict = Depends(get_current_user)):
+    """Update partner's duration options"""
+    if user.get("role") != "partner":
+        raise HTTPException(status_code=403, detail="Only partners can update duration options")
+    
+    profile = await db.partner_profiles.find_one({"user_id": user["id"]}, {"_id": 0, "id": 1})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Partner profile not found")
+    
+    await db.partner_profiles.update_one({"id": profile["id"]}, {"$set": {"duration_options": [d.dict() for d in durations]}})
+    return {"success": True}
+
 # Include router
 app.include_router(api_router)
 

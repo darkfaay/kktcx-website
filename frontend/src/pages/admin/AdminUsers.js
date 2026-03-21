@@ -30,13 +30,12 @@ const AdminUsers = () => {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [roleFilter, setRoleFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'grid'
 
   useEffect(() => {
     fetchUsers();
-  }, [page, roleFilter]);
+  }, [page]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -44,7 +43,7 @@ const AdminUsers = () => {
       const params = new URLSearchParams();
       params.append('page', page);
       params.append('limit', 20);
-      if (roleFilter) params.append('role', roleFilter);
+      params.append('role', 'user'); // Only fetch normal users
       if (searchQuery) params.append('search', searchQuery);
 
       const response = await api.get(`/admin/users?${params.toString()}`);
@@ -173,20 +172,9 @@ const AdminUsers = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && fetchUsers()}
               className="input-glass pl-10"
+              data-testid="user-search"
             />
           </div>
-          <Select value={roleFilter || "all"} onValueChange={(v) => setRoleFilter(v === "all" ? "" : v)}>
-            <SelectTrigger className="input-glass w-[180px]" data-testid="role-filter">
-              <Filter className="w-4 h-4 mr-2 text-white/40" />
-              <SelectValue placeholder="Tüm Roller" />
-            </SelectTrigger>
-            <SelectContent className="bg-[#15151F] border-white/10">
-              <SelectItem value="all">Tüm Roller</SelectItem>
-              <SelectItem value="user">Kullanıcı</SelectItem>
-              <SelectItem value="partner">Partner</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-            </SelectContent>
-          </Select>
           <Button onClick={fetchUsers} className="btn-primary">
             <Search className="w-4 h-4 mr-2" />
             Ara

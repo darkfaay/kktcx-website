@@ -663,34 +663,6 @@ const PartnerProfileEdit = () => {
           </div>
         </div>
 
-        {/* Categories */}
-        <div className="glass rounded-xl p-6">
-          <h3 className="text-white font-semibold mb-6 flex items-center gap-2">
-            <Tag className="w-5 h-5 text-[#E91E63]" />
-            Hizmet Kategorileri
-          </h3>
-          
-          <div className="flex flex-wrap gap-3">
-            {categories.map((cat) => (
-              <label
-                key={cat.id}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all ${
-                  formData.category_ids.includes(cat.id)
-                    ? 'bg-[#E91E63] text-white'
-                    : 'bg-white/10 text-white/70 hover:bg-white/20'
-                }`}
-              >
-                <Checkbox
-                  checked={formData.category_ids.includes(cat.id)}
-                  onCheckedChange={() => toggleArrayItem('category_ids', cat.id)}
-                  className="hidden"
-                />
-                {cat.name}
-              </label>
-            ))}
-          </div>
-        </div>
-
         {/* Availability */}
         <div className="glass rounded-xl p-6">
           <h3 className="text-white font-semibold mb-6 flex items-center gap-2">

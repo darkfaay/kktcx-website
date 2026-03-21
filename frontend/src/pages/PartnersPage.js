@@ -362,22 +362,6 @@ const PartnersPage = () => {
         </Select>
       </div>
 
-      {/* Category */}
-      <div>
-        <label className="text-white/70 text-sm mb-2 block">{t('category')}</label>
-        <Select value={filters.category_id || "all"} onValueChange={(v) => updateFilter('category_id', v === "all" ? "" : v)}>
-          <SelectTrigger className="input-glass">
-            <SelectValue placeholder={t('allCategories')} />
-          </SelectTrigger>
-          <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
-            <SelectItem value="all">{t('allCategories')}</SelectItem>
-            {categories.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
       {/* Age Range */}
       <div>
         <label className="text-white/70 text-sm mb-4 block">

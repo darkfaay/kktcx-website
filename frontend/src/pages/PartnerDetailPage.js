@@ -573,6 +573,23 @@ const PartnerDetailPage = () => {
                 İletişim
               </h3>
               
+              {/* Appointment Button */}
+              <Button 
+                className="w-full py-6 text-lg bg-[#D4AF37] hover:bg-[#D4AF37]/90 text-black font-bold"
+                onClick={() => {
+                  if (!user) {
+                    toast.error('Randevu almak için giriş yapmalısınız');
+                    navigate(`/${lang}/giris`);
+                    return;
+                  }
+                  navigate(`/${lang}/partner/${profile.slug || profile.id}/randevu`);
+                }}
+                data-testid="appointment-btn"
+              >
+                <Calendar className="w-5 h-5 mr-2" />
+                Randevu Al
+              </Button>
+              
               <Button 
                 className="btn-primary w-full py-6 text-lg"
                 onClick={handleMessage}
