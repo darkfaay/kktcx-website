@@ -479,10 +479,20 @@ async def get_categories(lang: str = "tr"):
     result = []
     for cat in categories:
         names = cat.get("names", {})
+        # Return all language fields for admin panel compatibility
         result.append({
             "id": cat.get("id"),
             "slug": cat.get("slug"),
-            "name": names.get(lang, names.get("tr", cat.get("name_tr", "")))
+            "name": names.get(lang, names.get("tr", cat.get("name_tr", ""))),
+            "name_tr": names.get("tr", cat.get("name_tr", "")),
+            "name_en": names.get("en", cat.get("name_en", "")),
+            "name_ru": names.get("ru", cat.get("name_ru", "")),
+            "name_de": names.get("de", cat.get("name_de", "")),
+            "name_el": names.get("el", cat.get("name_el", "")),
+            "type": cat.get("type", "service"),
+            "icon": cat.get("icon", ""),
+            "color": cat.get("color", "#E91E63"),
+            "active": cat.get("active", True)
         })
     return result
 
@@ -1886,6 +1896,161 @@ async def admin_delete_contact_message(message_id: str, admin: dict = Depends(re
         raise HTTPException(status_code=404, detail="Message not found")
     return {"success": True}
 
+# ==================== ADMIN CATEGORIES CRUD ====================
+
+@app.post("/api/admin/categories")
+async def admin_create_category(data: dict, admin: dict = Depends(require_admin)):
+    category_id = str(uuid.uuid4())
+    category = {
+        "id": category_id,
+        "slug": data.get("slug", ""),
+        "names": {
+            "tr": data.get("name_tr", ""),
+            "en": data.get("name_en", ""),
+            "ru": data.get("name_ru", ""),
+            "de": data.get("name_de", ""),
+            "el": data.get("name_el", ""),
+        },
+        "name_tr": data.get("name_tr", ""),
+        "name_en": data.get("name_en", ""),
+        "name_ru": data.get("name_ru", ""),
+        "name_de": data.get("name_de", ""),
+        "name_el": data.get("name_el", ""),
+        "type": data.get("type", "service"),
+        "icon": data.get("icon", ""),
+        "color": data.get("color", "#E91E63"),
+        "active": True,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.categories.insert_one(category)
+    return {"success": True, "id": category_id}
+
+@app.put("/api/admin/categories/{category_id}")
+async def admin_update_category(category_id: str, data: dict, admin: dict = Depends(require_admin)):
+    category = await db.categories.find_one({"id": category_id})
+    if not category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    
+    updates = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    if data.get("slug"):
+        updates["slug"] = data["slug"]
+    if data.get("type"):
+        updates["type"] = data["type"]
+    if data.get("icon") is not None:
+        updates["icon"] = data["icon"]
+    if data.get("color"):
+        updates["color"] = data["color"]
+    
+    # Update names
+    names = category.get("names", {})
+    for lang_code in ["tr", "en", "ru", "de", "el"]:
+        key = f"name_{lang_code}"
+        if data.get(key) is not None:
+            names[lang_code] = data[key]
+            updates[key] = data[key]
+    updates["names"] = names
+    
+    await db.categories.update_one({"id": category_id}, {"$set": updates})
+    return {"success": True}
+
+@app.delete("/api/admin/categories/{category_id}")
+async def admin_delete_category(category_id: str, admin: dict = Depends(require_admin)):
+    result = await db.categories.delete_one({"id": category_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Category not found")
+    return {"success": True}
+
+# ==================== ADMIN PACKAGES CRUD ====================
+
+@app.get("/api/admin/packages")
+async def admin_get_packages(admin: dict = Depends(require_admin)):
+    packages = await db.packages.find({}, {"_id": 0}).to_list(100)
+    return packages
+
+@app.post("/api/admin/packages")
+async def admin_create_package(data: dict, admin: dict = Depends(require_admin)):
+    package_id = str(uuid.uuid4())
+    package = {
+        "id": package_id,
+        "name_tr": data.get("name_tr", ""),
+        "name_en": data.get("name_en", ""),
+        "name_ru": data.get("name_ru", ""),
+        "name_de": data.get("name_de", ""),
+        "package_type": data.get("package_type", "featured"),
+        "price": float(data.get("price", 0)),
+        "duration_days": int(data.get("duration_days", 30)),
+        "priority_score": int(data.get("priority_score", 50)),
+        "features": data.get("features", []),
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.packages.insert_one(package)
+    return {"success": True, "id": package_id}
+
+@app.put("/api/admin/packages/{package_id}")
+async def admin_update_package(
+    package_id: str, 
+    price: Optional[float] = None,
+    duration_days: Optional[int] = None,
+    priority_score: Optional[int] = None,
+    name_tr: Optional[str] = None,
+    name_en: Optional[str] = None,
+    is_active: Optional[bool] = None,
+    admin: dict = Depends(require_admin)
+):
+    package = await db.packages.find_one({"id": package_id})
+    if not package:
+        raise HTTPException(status_code=404, detail="Package not found")
+    
+    updates = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    if price is not None:
+        updates["price"] = price
+    if duration_days is not None:
+        updates["duration_days"] = duration_days
+    if priority_score is not None:
+        updates["priority_score"] = priority_score
+    if name_tr is not None:
+        updates["name_tr"] = name_tr
+    if name_en is not None:
+        updates["name_en"] = name_en
+    if is_active is not None:
+        updates["is_active"] = is_active
+    
+    await db.packages.update_one({"id": package_id}, {"$set": updates})
+    return {"success": True}
+
+@app.delete("/api/admin/packages/{package_id}")
+async def admin_delete_package(package_id: str, admin: dict = Depends(require_admin)):
+    result = await db.packages.delete_one({"id": package_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Package not found")
+    return {"success": True}
+
+# ==================== ADMIN USER UPDATE ====================
+
+@app.put("/api/admin/users/{user_id}")
+async def admin_update_user(
+    user_id: str,
+    is_active: Optional[bool] = None,
+    role: Optional[str] = None,
+    admin: dict = Depends(require_admin)
+):
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    updates = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    if is_active is not None:
+        updates["is_active"] = is_active
+    if role is not None:
+        valid_roles = ["user", "partner", "admin"]
+        if role not in valid_roles:
+            raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {valid_roles}")
+        updates["role"] = role
+    
+    await db.users.update_one({"id": user_id}, {"$set": updates})
+    return {"success": True}
+
 # ==================== SEED DATABASE ====================
 
 @app.post("/api/seed-database")
@@ -1893,7 +2058,7 @@ async def seed_database(secret: str = ""):
     if secret != "kktcx-seed-2024":
         raise HTTPException(status_code=403, detail="Invalid secret")
     
-    results = {"admin": False, "cities": 0, "categories": 0, "settings": 0}
+    results = {"admin": False, "cities": 0, "categories": 0, "packages": 0, "settings": 0}
     
     # Admin
     admin_exists = await db.users.find_one({"email": "admin@kktcx.com"})
@@ -1941,18 +2106,30 @@ async def seed_database(secret: str = ""):
     # Categories (without Eskort, Jigolo, Trans)
     await db.categories.delete_many({})
     categories = [
-        {"id": str(uuid.uuid4()), "slug": "massage", "names": {"tr": "Masaj", "en": "Massage", "ru": "Массаж", "de": "Massage", "el": "Μασάζ"}, "active": True},
-        {"id": str(uuid.uuid4()), "slug": "companion", "names": {"tr": "Eslik", "en": "Companion", "ru": "Компаньон", "de": "Begleitung", "el": "Σύντροφος"}, "active": True},
-        {"id": str(uuid.uuid4()), "slug": "vip", "names": {"tr": "VIP", "en": "VIP", "ru": "VIP", "de": "VIP", "el": "VIP"}, "active": True},
-        {"id": str(uuid.uuid4()), "slug": "dinner-companion", "names": {"tr": "Yemek Esligi", "en": "Dinner Companion", "ru": "Компаньон на ужин", "de": "Dinner-Begleitung", "el": "Συνοδός δείπνου"}, "active": True},
-        {"id": str(uuid.uuid4()), "slug": "event-companion", "names": {"tr": "Davet Esligi", "en": "Event Companion", "ru": "Компаньон на мероприятие", "de": "Event-Begleitung", "el": "Συνοδός εκδηλώσεων"}, "active": True},
-        {"id": str(uuid.uuid4()), "slug": "travel-companion", "names": {"tr": "Gezi Esligi", "en": "Travel Companion", "ru": "Попутчик", "de": "Reisebegleitung", "el": "Συνοδός ταξιδιού"}, "active": True},
-        {"id": str(uuid.uuid4()), "slug": "gf-bf-experience", "names": {"tr": "Sevgili Deneyimi", "en": "GF/BF Experience", "ru": "Опыт парня/девушки", "de": "Freund/in-Erlebnis", "el": "Εμπειρία συντρόφου"}, "active": True},
-        {"id": str(uuid.uuid4()), "slug": "couple-roleplay", "names": {"tr": "Kari Koca Rolu", "en": "Couple Roleplay", "ru": "Ролевая игра пары", "de": "Paar-Rollenspiel", "el": "Ρόλος ζευγαριού"}, "active": True},
-        {"id": str(uuid.uuid4()), "slug": "sleep-companion", "names": {"tr": "Uyku Arkadasligi", "en": "Sleep Companion", "ru": "Компаньон для сна", "de": "Schlafbegleitung", "el": "Σύντροφος ύπνου"}, "active": True},
+        {"id": str(uuid.uuid4()), "slug": "massage", "names": {"tr": "Masaj", "en": "Massage", "ru": "Массаж", "de": "Massage", "el": "Μασάζ"}, "name_tr": "Masaj", "name_en": "Massage", "name_ru": "Массаж", "name_de": "Massage", "name_el": "Μασάζ", "type": "service", "icon": "💆", "color": "#9C27B0", "active": True},
+        {"id": str(uuid.uuid4()), "slug": "companion", "names": {"tr": "Eslik", "en": "Companion", "ru": "Компаньон", "de": "Begleitung", "el": "Σύντροφος"}, "name_tr": "Eslik", "name_en": "Companion", "name_ru": "Компаньон", "name_de": "Begleitung", "name_el": "Σύντροφος", "type": "service", "icon": "👫", "color": "#E91E63", "active": True},
+        {"id": str(uuid.uuid4()), "slug": "vip", "names": {"tr": "VIP", "en": "VIP", "ru": "VIP", "de": "VIP", "el": "VIP"}, "name_tr": "VIP", "name_en": "VIP", "name_ru": "VIP", "name_de": "VIP", "name_el": "VIP", "type": "style", "icon": "⭐", "color": "#D4AF37", "active": True},
+        {"id": str(uuid.uuid4()), "slug": "dinner-companion", "names": {"tr": "Yemek Esligi", "en": "Dinner Companion", "ru": "Компаньон на ужин", "de": "Dinner-Begleitung", "el": "Συνοδός δείπνου"}, "name_tr": "Yemek Esligi", "name_en": "Dinner Companion", "name_ru": "Компаньон на ужин", "name_de": "Dinner-Begleitung", "name_el": "Συνοδός δείπνου", "type": "service", "icon": "🍽️", "color": "#FF5722", "active": True},
+        {"id": str(uuid.uuid4()), "slug": "event-companion", "names": {"tr": "Davet Esligi", "en": "Event Companion", "ru": "Компаньон на мероприятие", "de": "Event-Begleitung", "el": "Συνοδός εκδηλώσεων"}, "name_tr": "Davet Esligi", "name_en": "Event Companion", "name_ru": "Компаньон на мероприятие", "name_de": "Event-Begleitung", "name_el": "Συνοδός εκδηλώσεων", "type": "service", "icon": "🎭", "color": "#3F51B5", "active": True},
+        {"id": str(uuid.uuid4()), "slug": "travel-companion", "names": {"tr": "Gezi Esligi", "en": "Travel Companion", "ru": "Попутчик", "de": "Reisebegleitung", "el": "Συνοδός ταξιδιού"}, "name_tr": "Gezi Esligi", "name_en": "Travel Companion", "name_ru": "Попутчик", "name_de": "Reisebegleitung", "name_el": "Συνοδός ταξιδιού", "type": "service", "icon": "✈️", "color": "#00BCD4", "active": True},
+        {"id": str(uuid.uuid4()), "slug": "gf-bf-experience", "names": {"tr": "Sevgili Deneyimi", "en": "GF/BF Experience", "ru": "Опыт парня/девушки", "de": "Freund/in-Erlebnis", "el": "Εμπειρία συντρόφου"}, "name_tr": "Sevgili Deneyimi", "name_en": "GF/BF Experience", "name_ru": "Опыт парня/девушки", "name_de": "Freund/in-Erlebnis", "name_el": "Εμπειρία συντρόφου", "type": "specialty", "icon": "💕", "color": "#F44336", "active": True},
+        {"id": str(uuid.uuid4()), "slug": "couple-roleplay", "names": {"tr": "Kari Koca Rolu", "en": "Couple Roleplay", "ru": "Ролевая игра пары", "de": "Paar-Rollenspiel", "el": "Ρόλος ζευγαριού"}, "name_tr": "Kari Koca Rolu", "name_en": "Couple Roleplay", "name_ru": "Ролевая игра пары", "name_de": "Paar-Rollenspiel", "name_el": "Ρόλος ζευγαριού", "type": "specialty", "icon": "💑", "color": "#E91E63", "active": True},
+        {"id": str(uuid.uuid4()), "slug": "sleep-companion", "names": {"tr": "Uyku Arkadasligi", "en": "Sleep Companion", "ru": "Компаньон для сна", "de": "Schlafbegleitung", "el": "Σύντροφος ύπνου"}, "name_tr": "Uyku Arkadasligi", "name_en": "Sleep Companion", "name_ru": "Компаньон для сна", "name_de": "Schlafbegleitung", "name_el": "Σύντροφος ύπνου", "type": "specialty", "icon": "🌙", "color": "#673AB7", "active": True},
     ]
     await db.categories.insert_many(categories)
     results["categories"] = len(categories)
+
+    # Packages
+    await db.packages.delete_many({})
+    packages = [
+        {"id": str(uuid.uuid4()), "name_tr": "Standart", "name_en": "Standard", "package_type": "standard", "price": 0, "duration_days": 30, "priority_score": 0, "is_active": True, "features": ["Temel listeleme", "3 fotoğraf"]},
+        {"id": str(uuid.uuid4()), "name_tr": "Öne Çıkan", "name_en": "Featured", "package_type": "featured", "price": 29.99, "duration_days": 30, "priority_score": 50, "is_active": True, "features": ["Öne çıkan rozet", "10 fotoğraf", "Vitrin görünümü"]},
+        {"id": str(uuid.uuid4()), "name_tr": "Şehir Vitrini", "name_en": "City Showcase", "package_type": "city_vitrin", "price": 49.99, "duration_days": 30, "priority_score": 75, "is_active": True, "features": ["Şehir sayfasında vitrin", "15 fotoğraf", "Öncelikli sıralama"]},
+        {"id": str(uuid.uuid4()), "name_tr": "Ana Sayfa Vitrini", "name_en": "Homepage Showcase", "package_type": "homepage_vitrin", "price": 99.99, "duration_days": 30, "priority_score": 100, "is_active": True, "features": ["Ana sayfada vitrin", "Sınırsız fotoğraf", "En üst sıralama", "VIP rozet"]},
+        {"id": str(uuid.uuid4()), "name_tr": "Premium", "name_en": "Premium", "package_type": "premium", "price": 149.99, "duration_days": 30, "priority_score": 150, "is_active": True, "features": ["Tüm özellikler", "Özel destek", "Analitik raporlar"]},
+    ]
+    await db.packages.insert_many(packages)
+    results["packages"] = len(packages)
 
     # Settings
     settings = [
