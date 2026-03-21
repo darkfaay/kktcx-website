@@ -1,2604 +1,327 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Header, Query, WebSocket, WebSocketDisconnect, Request, Response
-from fastapi.responses import JSONResponse
-from dotenv import load_dotenv
-from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
-import os
+"""
+KKTCX Backend Server
+Modular FastAPI Application
+"""
+from fastapi import FastAPI, WebSocket, Response, Query, Header
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
+from contextlib import asynccontextmanager
 import logging
-from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict, EmailStr
-from typing import List, Optional, Dict, Any
-import uuid
-from datetime import datetime, timezone, timedelta
-import jwt
-import bcrypt
-import json
-import asyncio
-import requests
-
-ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
 
 # Configuration
-MONGO_URL = os.environ.get('MONGO_URL')
-DB_NAME = os.environ.get('DB_NAME')
-JWT_SECRET = os.environ.get('JWT_SECRET', 'default_secret')
-APP_NAME = os.environ.get('APP_NAME', 'kktcx')
-EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY')
-STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY')
+from config import CORS_ORIGINS, APP_NAME
 
-# MongoDB connection
-client = AsyncIOMotorClient(MONGO_URL)
-db = client[DB_NAME]
+# Database
+from database import db, init_indexes
 
-# Object Storage Configuration
-STORAGE_URL = "https://integrations.emergentagent.com/objstore/api/v1/storage"
-storage_key = None
+# Routers
+from routers import (
+    auth_router,
+    partners_router,
+    catalog_router,
+    messages_router,
+    websocket_endpoint,
+    appointments_router,
+    admin_router
+)
 
-def init_storage():
-    global storage_key
-    if storage_key:
-        return storage_key
-    try:
-        resp = requests.post(f"{STORAGE_URL}/init", json={"emergent_key": EMERGENT_LLM_KEY}, timeout=30)
-        resp.raise_for_status()
-        storage_key = resp.json()["storage_key"]
-        return storage_key
-    except Exception as e:
-        logging.error(f"Storage init failed: {e}")
-        return None
+# Services
+from services.storage import get_object
 
-def put_object(path: str, data: bytes, content_type: str) -> dict:
-    key = init_storage()
-    if not key:
-        raise HTTPException(status_code=500, detail="Storage not initialized")
-    resp = requests.put(
-        f"{STORAGE_URL}/objects/{path}",
-        headers={"X-Storage-Key": key, "Content-Type": content_type},
-        data=data, timeout=120
-    )
-    resp.raise_for_status()
-    return resp.json()
-
-def get_object(path: str) -> tuple:
-    key = init_storage()
-    if not key:
-        raise HTTPException(status_code=500, detail="Storage not initialized")
-    resp = requests.get(
-        f"{STORAGE_URL}/objects/{path}",
-        headers={"X-Storage-Key": key}, timeout=60
-    )
-    resp.raise_for_status()
-    return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
-
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# Setup logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="KKTCX API")
-api_router = APIRouter(prefix="/api")
 
-# ==================== WEBSOCKET CONNECTION MANAGER ====================
-
-class ConnectionManager:
-    def __init__(self):
-        # user_id -> list of websocket connections
-        self.active_connections: Dict[str, List[WebSocket]] = {}
-    
-    async def connect(self, websocket: WebSocket, user_id: str):
-        await websocket.accept()
-        if user_id not in self.active_connections:
-            self.active_connections[user_id] = []
-        self.active_connections[user_id].append(websocket)
-        logger.info(f"WebSocket connected for user: {user_id}")
-    
-    def disconnect(self, websocket: WebSocket, user_id: str):
-        if user_id in self.active_connections:
-            if websocket in self.active_connections[user_id]:
-                self.active_connections[user_id].remove(websocket)
-            if not self.active_connections[user_id]:
-                del self.active_connections[user_id]
-        logger.info(f"WebSocket disconnected for user: {user_id}")
-    
-    async def send_personal_message(self, message: dict, user_id: str):
-        """Send message to all connections of a specific user"""
-        if user_id in self.active_connections:
-            for connection in self.active_connections[user_id]:
-                try:
-                    await connection.send_json(message)
-                except Exception as e:
-                    logger.error(f"Error sending message to {user_id}: {e}")
-    
-    async def broadcast_to_conversation(self, message: dict, user_ids: List[str]):
-        """Send message to all users in a conversation"""
-        for user_id in user_ids:
-            await self.send_personal_message(message, user_id)
-    
-    def is_user_online(self, user_id: str) -> bool:
-        return user_id in self.active_connections and len(self.active_connections[user_id]) > 0
-
-ws_manager = ConnectionManager()
-
-# ==================== MODELS ====================
-
-class UserRole:
-    VISITOR = "visitor"
-    USER = "user"
-    PARTNER = "partner"
-    ADMIN = "admin"
-
-class UserBase(BaseModel):
-    email: EmailStr
-    phone: Optional[str] = None
-    name: Optional[str] = None
-    role: str = UserRole.USER
-    language: str = "tr"
-
-class UserCreate(BaseModel):
-    email: EmailStr
-    password: str
-    phone: Optional[str] = None
-    name: Optional[str] = None
-    role: str = UserRole.USER
-    language: str = "tr"
-    orientations: List[str] = []  # heterosexual, lesbian, gay, bisexual
-
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
-
-class UserResponse(BaseModel):
-    id: str
-    email: str
-    phone: Optional[str] = None
-    name: Optional[str] = None
-    role: str
-    language: str
-    orientations: List[str] = []
-    created_at: str
-
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    user: UserResponse
-
-class PartnerProfileCreate(BaseModel):
-    nickname: str
-    age: int
-    city_id: str
-    district_id: Optional[str] = None
-    languages: List[str] = []
-    category_ids: List[str] = []
-    service_types: List[str] = []  # dinner_companion, event_companion, sleep_companion, gf_bf_experience, spouse_roleplay, travel_companion
-    orientations: List[str] = []  # heterosexual, lesbian, gay, bisexual, trans
-    gender: str = "female"  # female, male, trans
-    body_type: Optional[str] = None  # slim, athletic, curvy, plus-size
-    height: Optional[int] = None
-    hair_color: Optional[str] = None
-    eye_color: Optional[str] = None
-    ethnicity: Optional[str] = None  # caucasian, african, asian, latin, middle-eastern, mixed, other
-    skin_tone: Optional[str] = None  # fair, light, medium, olive, tan, brown, dark
-    short_description: str
-    detailed_description: str
-    availability: Dict[str, Any] = {}
-    is_available_today: bool = False
-    is_available_tonight: bool = False
-    hourly_rate: Optional[float] = None
-    incall: bool = False
-    outcall: bool = False
-    whatsapp: Optional[str] = None
-    telegram: Optional[str] = None
-
-class PartnerProfileUpdate(BaseModel):
-    nickname: Optional[str] = None
-    age: Optional[int] = None
-    city_id: Optional[str] = None
-    district_id: Optional[str] = None
-    languages: Optional[List[str]] = None
-    category_ids: Optional[List[str]] = None
-    service_types: Optional[List[str]] = None
-    orientations: Optional[List[str]] = None
-    gender: Optional[str] = None
-    body_type: Optional[str] = None
-    height: Optional[int] = None
-    hair_color: Optional[str] = None
-    eye_color: Optional[str] = None
-    ethnicity: Optional[str] = None
-    skin_tone: Optional[str] = None
-    short_description: Optional[str] = None
-    detailed_description: Optional[str] = None
-    availability: Optional[Dict[str, Any]] = None
-    is_available_today: Optional[bool] = None
-    is_available_tonight: Optional[bool] = None
-    hourly_rate: Optional[float] = None
-    incall: Optional[bool] = None
-    outcall: Optional[bool] = None
-    whatsapp: Optional[str] = None
-    telegram: Optional[str] = None
-
-class MessageCreate(BaseModel):
-    receiver_id: str
-    content: str
-
-class CityCreate(BaseModel):
-    name_tr: str
-    name_en: str
-    name_ru: str
-    name_de: str
-    name_el: str  # Greek/Rumca
-    slug: str
-    region: str = "north"  # north (KKTC), south (Greek Cyprus)
-
-class CategoryCreate(BaseModel):
-    name_tr: str
-    name_en: str
-    name_ru: str
-    name_de: str
-    name_el: str  # Greek/Rumca
-    slug: str
-    icon: Optional[str] = None
-
-class PackageCreate(BaseModel):
-    name_tr: str
-    name_en: str
-    name_ru: str
-    name_de: str
-    name_el: str  # Greek/Rumca
-    package_type: str  # standard, featured, city_vitrin, homepage_vitrin, premium
-    price: float
-    duration_days: int
-    priority_score: int = 0
-    features: Dict[str, Any] = {}
-
-class SettingUpdate(BaseModel):
-    key: str
-    value: str
-
-# ==================== AUTH HELPERS ====================
-
-def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-
-def verify_password(password: str, hashed: str) -> bool:
-    return bcrypt.checkpw(password.encode(), hashed.encode())
-
-def create_token(user_id: str, role: str) -> str:
-    payload = {
-        "sub": user_id,
-        "role": role,
-        "exp": datetime.now(timezone.utc) + timedelta(days=7)
-    }
-    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
-
-async def get_current_user(authorization: str = Header(None)):
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    token = authorization.split(" ")[1]
-    try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-        user = await db.users.find_one({"id": payload["sub"]}, {"_id": 0})
-        if not user:
-            raise HTTPException(status_code=401, detail="User not found")
-        return user
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-async def get_optional_user(authorization: str = Header(None)):
-    if not authorization or not authorization.startswith("Bearer "):
-        return None
-    try:
-        return await get_current_user(authorization)
-    except:
-        return None
-
-async def require_admin(user: dict = Depends(get_current_user)):
-    if user["role"] != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail="Admin access required")
-    return user
-
-async def require_partner(user: dict = Depends(get_current_user)):
-    if user["role"] not in [UserRole.PARTNER, UserRole.ADMIN]:
-        raise HTTPException(status_code=403, detail="Partner access required")
-    return user
-
-# ==================== SMS SERVICE ====================
-
-async def get_sms_settings():
-    settings = await db.settings.find_one({"key": "netgsm"}, {"_id": 0})
-    return settings.get("value", {}) if settings else {}
-
-async def send_sms_notification(phone: str, message: str):
-    """Send SMS via Netgsm if configured"""
-    try:
-        settings = await get_sms_settings()
-        if not settings.get("enabled"):
-            logger.info(f"SMS disabled, would send to {phone}: {message}")
-            # Log the SMS attempt
-            await db.sms_logs.insert_one({
-                "id": str(uuid.uuid4()),
-                "phone": phone,
-                "message": message,
-                "status": "skipped",
-                "reason": "SMS disabled",
-                "created_at": datetime.now(timezone.utc).isoformat()
-            })
-            return False
-        
-        usercode = settings.get("usercode")
-        password = settings.get("password")
-        msgheader = settings.get("msgheader")
-        
-        if not all([usercode, password, msgheader]):
-            logger.warning("Netgsm credentials not configured")
-            return False
-        
-        from netgsm import Netgsm
-        netgsm = Netgsm(username=usercode, password=password)
-        response = netgsm.sms.send(
-            msgheader=msgheader,
-            messages=[{"msg": message, "no": phone}]
-        )
-        
-        await db.sms_logs.insert_one({
-            "id": str(uuid.uuid4()),
-            "phone": phone,
-            "message": message,
-            "status": "sent",
-            "response": str(response),
-            "created_at": datetime.now(timezone.utc).isoformat()
-        })
-        return True
-    except Exception as e:
-        logger.error(f"SMS send failed: {e}")
-        await db.sms_logs.insert_one({
-            "id": str(uuid.uuid4()),
-            "phone": phone,
-            "message": message,
-            "status": "failed",
-            "error": str(e),
-            "created_at": datetime.now(timezone.utc).isoformat()
-        })
-        return False
-
-# ==================== AUTH ROUTES ====================
-
-@api_router.post("/auth/register", response_model=TokenResponse)
-async def register(data: UserCreate):
-    existing = await db.users.find_one({"email": data.email})
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    
-    user_id = str(uuid.uuid4())
-    user = {
-        "id": user_id,
-        "email": data.email,
-        "password": hash_password(data.password),
-        "phone": data.phone,
-        "name": data.name,
-        "role": data.role,
-        "language": data.language,
-        "orientations": data.orientations,
-        "is_active": True,
-        "is_verified": False,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    await db.users.insert_one(user)
-    
-    token = create_token(user_id, data.role)
-    return TokenResponse(
-        access_token=token,
-        user=UserResponse(
-            id=user_id,
-            email=data.email,
-            phone=data.phone,
-            name=data.name,
-            role=data.role,
-            language=data.language,
-            orientations=data.orientations,
-            created_at=user["created_at"]
-        )
-    )
-
-@api_router.post("/auth/login", response_model=TokenResponse)
-async def login(data: UserLogin):
-    user = await db.users.find_one({"email": data.email}, {"_id": 0})
-    if not user or not verify_password(data.password, user["password"]):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    
-    if not user.get("is_active", True):
-        raise HTTPException(status_code=403, detail="Account is disabled")
-    
-    token = create_token(user["id"], user["role"])
-    return TokenResponse(
-        access_token=token,
-        user=UserResponse(
-            id=user["id"],
-            email=user["email"],
-            phone=user.get("phone"),
-            name=user.get("name"),
-            role=user["role"],
-            language=user.get("language", "tr"),
-            orientations=user.get("orientations", []),
-            created_at=user["created_at"]
-        )
-    )
-
-@api_router.get("/auth/me", response_model=UserResponse)
-async def get_me(user: dict = Depends(get_current_user)):
-    return UserResponse(
-        id=user["id"],
-        email=user["email"],
-        phone=user.get("phone"),
-        name=user.get("name"),
-        role=user["role"],
-        language=user.get("language", "tr"),
-        orientations=user.get("orientations", []),
-        created_at=user["created_at"]
-    )
-
-@api_router.put("/auth/profile")
-async def update_profile(
-    name: Optional[str] = None,
-    phone: Optional[str] = None,
-    language: Optional[str] = None,
-    orientations: Optional[List[str]] = Query(None),
-    user: dict = Depends(get_current_user)
-):
-    updates = {}
-    if name is not None:
-        updates["name"] = name
-    if phone is not None:
-        updates["phone"] = phone
-    if language is not None:
-        updates["language"] = language
-    if orientations is not None:
-        updates["orientations"] = orientations
-    
-    if updates:
-        await db.users.update_one({"id": user["id"]}, {"$set": updates})
-    
-    return {"success": True}
-
-# ==================== CITIES & DISTRICTS ====================
-
-@api_router.get("/cities")
-async def get_cities(lang: str = "tr"):
-    cities = await db.cities.find({}, {"_id": 0}).to_list(100)
-    for city in cities:
-        city["name"] = city.get(f"name_{lang}", city.get("name_en", ""))
-    return cities
-
-@api_router.post("/admin/cities")
-async def create_city(data: CityCreate, admin: dict = Depends(require_admin)):
-    city = {
-        "id": str(uuid.uuid4()),
-        "name_tr": data.name_tr,
-        "name_en": data.name_en,
-        "name_ru": data.name_ru,
-        "name_de": data.name_de,
-        "slug": data.slug,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    await db.cities.insert_one(city)
-    return {"success": True, "city": {k: v for k, v in city.items() if k != "_id"}}
-
-@api_router.get("/cities/{city_id}/districts")
-async def get_districts(city_id: str, lang: str = "tr"):
-    districts = await db.districts.find({"city_id": city_id}, {"_id": 0}).to_list(100)
-    for district in districts:
-        district["name"] = district.get(f"name_{lang}", district.get("name_en", ""))
-    return districts
-
-@api_router.post("/admin/districts")
-async def create_district(
-    city_id: str,
-    name_tr: str,
-    name_en: str,
-    name_ru: str = "",
-    name_de: str = "",
-    slug: str = "",
-    admin: dict = Depends(require_admin)
-):
-    district = {
-        "id": str(uuid.uuid4()),
-        "city_id": city_id,
-        "name_tr": name_tr,
-        "name_en": name_en,
-        "name_ru": name_ru or name_en,
-        "name_de": name_de or name_en,
-        "slug": slug or name_en.lower().replace(" ", "-"),
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    await db.districts.insert_one(district)
-    return {"success": True, "district": {k: v for k, v in district.items() if k != "_id"}}
-
-# ==================== CATEGORIES ====================
-
-@api_router.get("/categories")
-async def get_categories(lang: str = "tr"):
-    categories = await db.categories.find({}, {"_id": 0}).to_list(100)
-    for cat in categories:
-        cat["name"] = cat.get(f"name_{lang}", cat.get("name_en", ""))
-    return categories
-
-@api_router.post("/admin/categories")
-async def create_category(data: CategoryCreate, admin: dict = Depends(require_admin)):
-    category = {
-        "id": str(uuid.uuid4()),
-        "name_tr": data.name_tr,
-        "name_en": data.name_en,
-        "name_ru": data.name_ru,
-        "name_de": data.name_de,
-        "slug": data.slug,
-        "icon": data.icon,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    await db.categories.insert_one(category)
-    return {"success": True, "category": {k: v for k, v in category.items() if k != "_id"}}
-
-# ==================== PARTNER PROFILES ====================
-
-@api_router.post("/partner/profile")
-async def create_partner_profile(data: PartnerProfileCreate, user: dict = Depends(get_current_user)):
-    # Check if profile exists
-    existing = await db.partner_profiles.find_one({"user_id": user["id"]})
-    if existing:
-        raise HTTPException(status_code=400, detail="Profile already exists")
-    
-    profile_id = str(uuid.uuid4())
-    slug = f"{data.nickname.lower().replace(' ', '-')}-{profile_id[:8]}"
-    
-    profile = {
-        "id": profile_id,
-        "user_id": user["id"],
-        "nickname": data.nickname,
-        "age": data.age,
-        "city_id": data.city_id,
-        "district_id": data.district_id,
-        "languages": data.languages,
-        "category_ids": data.category_ids,
-        "service_types": data.service_types,
-        "orientations": data.orientations,
-        "gender": data.gender,
-        "body_type": data.body_type,
-        "height": data.height,
-        "hair_color": data.hair_color,
-        "eye_color": data.eye_color,
-        "ethnicity": data.ethnicity,
-        "skin_tone": data.skin_tone,
-        "short_description": data.short_description,
-        "detailed_description": data.detailed_description,
-        "availability": data.availability,
-        "is_available_today": data.is_available_today,
-        "is_available_tonight": data.is_available_tonight,
-        "hourly_rate": data.hourly_rate,
-        "incall": data.incall,
-        "outcall": data.outcall,
-        "whatsapp": data.whatsapp,
-        "telegram": data.telegram,
-        "slug": slug,
-        "status": "draft",  # draft, pending, approved, rejected, inactive, expired
-        "is_verified": False,
-        "is_featured": False,
-        "is_vitrin": False,
-        "is_homepage_vitrin": False,  # New: For homepage premium showcase
-        "is_city_vitrin": False,  # New: For city page premium showcase
-        "package_type": "standard",
-        "package_expires_at": None,
-        "priority_score": 0,
-        "view_count": 0,
-        "images": [],
-        "cover_image": None,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "updated_at": datetime.now(timezone.utc).isoformat()
-    }
-    
-    await db.partner_profiles.insert_one(profile)
-    
-    # Update user role to partner
-    await db.users.update_one({"id": user["id"]}, {"$set": {"role": UserRole.PARTNER}})
-    
-    return {"success": True, "profile": {k: v for k, v in profile.items() if k != "_id"}}
-
-@api_router.put("/partner/profile")
-async def update_partner_profile(data: PartnerProfileUpdate, user: dict = Depends(require_partner)):
-    profile = await db.partner_profiles.find_one({"user_id": user["id"]}, {"_id": 0})
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    
-    updates = {k: v for k, v in data.model_dump().items() if v is not None}
-    if updates:
-        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
-        # If significant changes, reset to pending review
-        if any(k in updates for k in ["short_description", "detailed_description"]):
-            if profile["status"] == "approved":
-                updates["status"] = "pending"
-        await db.partner_profiles.update_one({"user_id": user["id"]}, {"$set": updates})
-    
-    return {"success": True}
-
-@api_router.get("/partner/profile")
-async def get_own_partner_profile(user: dict = Depends(require_partner)):
-    profile = await db.partner_profiles.find_one({"user_id": user["id"]}, {"_id": 0})
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    return profile
-
-@api_router.post("/partner/submit-for-review")
-async def submit_for_review(user: dict = Depends(require_partner)):
-    profile = await db.partner_profiles.find_one({"user_id": user["id"]})
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    
-    if profile["status"] not in ["draft", "rejected"]:
-        raise HTTPException(status_code=400, detail="Profile cannot be submitted")
-    
-    await db.partner_profiles.update_one(
-        {"user_id": user["id"]},
-        {"$set": {"status": "pending", "updated_at": datetime.now(timezone.utc).isoformat()}}
-    )
-    return {"success": True}
-
-# ==================== IMAGE UPLOAD ====================
-
-@api_router.post("/partner/upload-image")
-async def upload_partner_image(
-    file: UploadFile = File(...),
-    is_cover: bool = False,
-    is_blurred: bool = False,
-    user: dict = Depends(require_partner)
-):
-    profile = await db.partner_profiles.find_one({"user_id": user["id"]})
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    
-    # Validate file type
-    allowed_types = ["image/jpeg", "image/png", "image/webp"]
-    if file.content_type not in allowed_types:
-        raise HTTPException(status_code=400, detail="Invalid file type")
-    
-    # Read file
-    data = await file.read()
-    if len(data) > 10 * 1024 * 1024:  # 10MB limit
-        raise HTTPException(status_code=400, detail="File too large")
-    
-    # Generate path
-    ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
-    image_id = str(uuid.uuid4())
-    path = f"{APP_NAME}/partners/{user['id']}/{image_id}.{ext}"
-    
-    # Upload to storage
-    result = put_object(path, data, file.content_type)
-    
-    # Create image record with blur support
-    image_record = {
-        "id": image_id,
-        "path": result["path"],
-        "original_filename": file.filename,
-        "content_type": file.content_type,
-        "size": result.get("size", len(data)),
-        "is_cover": is_cover,
-        "is_blurred": is_blurred,  # New field for blur feature
-        "order": len(profile.get("images", [])),
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    
-    # Update profile
-    update_ops = {"$push": {"images": image_record}}
-    if is_cover:
-        update_ops["$set"] = {"cover_image": image_record}
-    
-    await db.partner_profiles.update_one({"user_id": user["id"]}, update_ops)
-    
-    return {"success": True, "image": image_record}
-
-@api_router.get("/files/{path:path}")
-async def get_file(path: str, auth: str = Query(None), authorization: str = Header(None)):
-    try:
-        data, content_type = get_object(path)
-        return Response(content=data, media_type=content_type)
-    except Exception:
-        raise HTTPException(status_code=404, detail="File not found")
-
-@api_router.delete("/partner/images/{image_id}")
-async def delete_partner_image(image_id: str, user: dict = Depends(require_partner)):
-    profile = await db.partner_profiles.find_one({"user_id": user["id"]})
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    
-    # Find and remove image
-    images = [img for img in profile.get("images", []) if img["id"] != image_id]
-    update_ops = {"$set": {"images": images}}
-    
-    # If cover was deleted, clear it
-    if profile.get("cover_image", {}).get("id") == image_id:
-        update_ops["$set"]["cover_image"] = None
-    
-    await db.partner_profiles.update_one({"user_id": user["id"]}, update_ops)
-    return {"success": True}
-
-@api_router.put("/partner/images/{image_id}/blur")
-async def toggle_image_blur(image_id: str, is_blurred: bool, user: dict = Depends(require_partner)):
-    """Toggle blur status of an image"""
-    profile = await db.partner_profiles.find_one({"user_id": user["id"]})
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    
-    # Find and update image blur status
-    images = profile.get("images", [])
-    updated = False
-    for img in images:
-        if img["id"] == image_id:
-            img["is_blurred"] = is_blurred
-            updated = True
-            break
-    
-    if not updated:
-        raise HTTPException(status_code=404, detail="Image not found")
-    
-    # Update cover image if it's the same
-    cover_image = profile.get("cover_image")
-    if cover_image and cover_image.get("id") == image_id:
-        cover_image["is_blurred"] = is_blurred
-        await db.partner_profiles.update_one(
-            {"user_id": user["id"]},
-            {"$set": {"images": images, "cover_image": cover_image}}
-        )
-    else:
-        await db.partner_profiles.update_one(
-            {"user_id": user["id"]},
-            {"$set": {"images": images}}
-        )
-    
-    return {"success": True}
-
-@api_router.put("/partner/images/{image_id}/cover")
-async def set_image_as_cover(image_id: str, user: dict = Depends(require_partner)):
-    """Set an image as cover photo"""
-    profile = await db.partner_profiles.find_one({"user_id": user["id"]})
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    
-    # Find the image
-    images = profile.get("images", [])
-    cover_image = None
-    for img in images:
-        img["is_cover"] = img["id"] == image_id
-        if img["id"] == image_id:
-            cover_image = img
-    
-    if not cover_image:
-        raise HTTPException(status_code=404, detail="Image not found")
-    
-    await db.partner_profiles.update_one(
-        {"user_id": user["id"]},
-        {"$set": {"images": images, "cover_image": cover_image}}
-    )
-    
-    return {"success": True}
-
-# ==================== PUBLIC PARTNER LISTINGS ====================
-
-@api_router.get("/partners")
-async def list_partners(
-    city_id: Optional[str] = None,
-    district_id: Optional[str] = None,
-    category_id: Optional[str] = None,
-    service_type: Optional[str] = None,
-    orientation: Optional[str] = None,
-    gender: Optional[str] = None,
-    min_age: Optional[int] = None,
-    max_age: Optional[int] = None,
-    language: Optional[str] = None,
-    available_today: Optional[bool] = None,
-    available_tonight: Optional[bool] = None,
-    featured_only: Optional[bool] = None,
-    verified_only: Optional[bool] = None,
-    incall: Optional[bool] = None,
-    outcall: Optional[bool] = None,
-    sort_by: str = "recommended",
-    page: int = 1,
-    limit: int = 20,
-    lang: str = "tr"
-):
-    # Build query
-    query = {"status": "approved"}
-    
-    if city_id:
-        query["city_id"] = city_id
-    if district_id:
-        query["district_id"] = district_id
-    if category_id:
-        query["category_ids"] = category_id
-    if service_type:
-        query["service_types"] = service_type
-    if orientation:
-        query["orientations"] = orientation
-    if gender:
-        query["gender"] = gender
-    if min_age:
-        query["age"] = {"$gte": min_age}
-    if max_age:
-        query.setdefault("age", {})["$lte"] = max_age
-    if language:
-        query["languages"] = language
-    if available_today:
-        query["is_available_today"] = True
-    if available_tonight:
-        query["is_available_tonight"] = True
-    if featured_only:
-        query["is_featured"] = True
-    if verified_only:
-        query["is_verified"] = True
-    if incall:
-        query["incall"] = True
-    if outcall:
-        query["outcall"] = True
-    
-    # Build sort
-    sort_options = {
-        "recommended": [("priority_score", -1), ("created_at", -1)],
-        "newest": [("created_at", -1)],
-        "popular": [("view_count", -1)],
-        "featured": [("is_featured", -1), ("priority_score", -1)]
-    }
-    sort = sort_options.get(sort_by, sort_options["recommended"])
-    
-    # Get total count
-    total = await db.partner_profiles.count_documents(query)
-    
-    # Get profiles
-    skip = (page - 1) * limit
-    profiles = await db.partner_profiles.find(query, {"_id": 0}).sort(sort).skip(skip).limit(limit).to_list(limit)
-    
-    # Enrich with city/district names
-    city_ids = list(set(p.get("city_id") for p in profiles if p.get("city_id")))
-    # Try to match by both id and slug
-    cities_by_id = {c["id"]: c for c in await db.cities.find({"id": {"$in": city_ids}}, {"_id": 0}).to_list(100)}
-    cities_by_slug = {c["slug"]: c for c in await db.cities.find({"slug": {"$in": city_ids}}, {"_id": 0}).to_list(100)}
-    
-    for profile in profiles:
-        city_id = profile.get("city_id", "")
-        city = cities_by_id.get(city_id) or cities_by_slug.get(city_id) or {}
-        profile["city_name"] = city.get(f"name_{lang}", city.get("name_tr", city.get("name_en", city_id.replace("-", " ").title())))
-    
-    return {
-        "profiles": profiles,
-        "total": total,
-        "page": page,
-        "limit": limit,
-        "pages": (total + limit - 1) // limit
-    }
-
-@api_router.get("/partners/{slug}")
-async def get_partner_profile(slug: str, lang: str = "tr", user: dict = Depends(get_optional_user)):
-    profile = await db.partner_profiles.find_one({"slug": slug, "status": "approved"}, {"_id": 0})
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    
-    # Increment view count
-    await db.partner_profiles.update_one({"slug": slug}, {"$inc": {"view_count": 1}})
-    
-    # Get city and district (match by both id and slug)
-    city_id = profile.get("city_id", "")
-    city = await db.cities.find_one({"$or": [{"id": city_id}, {"slug": city_id}]}, {"_id": 0})
-    if city:
-        profile["city_name"] = city.get(f"name_{lang}", city.get("name_tr", city.get("name_en", city_id)))
-    else:
-        profile["city_name"] = city_id.replace("-", " ").title() if city_id else ""
-    
-    district = await db.districts.find_one({"id": profile.get("district_id")}, {"_id": 0})
-    if district:
-        profile["district_name"] = district.get(f"name_{lang}", district.get("name_en", ""))
-    
-    # Get categories
-    if profile.get("category_ids"):
-        categories = await db.categories.find({"id": {"$in": profile["category_ids"]}}, {"_id": 0}).to_list(100)
-        profile["categories"] = [{"id": c["id"], "name": c.get(f"name_{lang}", c.get("name_en", ""))} for c in categories]
-    
-    # Check if favorited
-    if user:
-        favorite = await db.favorites.find_one({"user_id": user["id"], "profile_id": profile["id"]})
-        profile["is_favorited"] = favorite is not None
-    else:
-        profile["is_favorited"] = False
-    
-    return profile
-
-@api_router.get("/partners/city/{city_slug}")
-async def get_partners_by_city(city_slug: str, page: int = 1, limit: int = 20, lang: str = "tr"):
-    city = await db.cities.find_one({"slug": city_slug}, {"_id": 0})
-    if not city:
-        raise HTTPException(status_code=404, detail="City not found")
-    
-    return await list_partners(city_id=city["id"], page=page, limit=limit, lang=lang)
-
-# ==================== FAVORITES ====================
-
-@api_router.post("/favorites/{profile_id}")
-async def add_favorite(profile_id: str, user: dict = Depends(get_current_user)):
-    # Check if profile exists
-    profile = await db.partner_profiles.find_one({"id": profile_id, "status": "approved"})
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
-    
-    # Check if already favorited
-    existing = await db.favorites.find_one({"user_id": user["id"], "profile_id": profile_id})
-    if existing:
-        return {"success": True, "message": "Already favorited"}
-    
-    await db.favorites.insert_one({
-        "id": str(uuid.uuid4()),
-        "user_id": user["id"],
-        "profile_id": profile_id,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    })
-    return {"success": True}
-
-@api_router.delete("/favorites/{profile_id}")
-async def remove_favorite(profile_id: str, user: dict = Depends(get_current_user)):
-    await db.favorites.delete_one({"user_id": user["id"], "profile_id": profile_id})
-    return {"success": True}
-
-@api_router.get("/favorites")
-async def get_favorites(user: dict = Depends(get_current_user), lang: str = "tr"):
-    favorites = await db.favorites.find({"user_id": user["id"]}, {"_id": 0}).to_list(100)
-    profile_ids = [f["profile_id"] for f in favorites]
-    
-    profiles = await db.partner_profiles.find(
-        {"id": {"$in": profile_ids}, "status": "approved"},
-        {"_id": 0}
-    ).to_list(100)
-    
-    # Enrich with city names
-    city_ids = list(set(p.get("city_id") for p in profiles if p.get("city_id")))
-    cities = {c["id"]: c for c in await db.cities.find({"id": {"$in": city_ids}}, {"_id": 0}).to_list(100)}
-    
-    for profile in profiles:
-        city = cities.get(profile.get("city_id"), {})
-        profile["city_name"] = city.get(f"name_{lang}", city.get("name_en", ""))
-        profile["is_favorited"] = True
-    
-    return profiles
-
-# ==================== MESSAGING ====================
-
-@api_router.post("/messages")
-async def send_message(data: MessageCreate, user: dict = Depends(get_current_user)):
-    # Get receiver
-    receiver = await db.users.find_one({"id": data.receiver_id}, {"_id": 0})
-    if not receiver:
-        raise HTTPException(status_code=404, detail="Receiver not found")
-    
-    # Find or create conversation
-    conversation = await db.conversations.find_one({
-        "$or": [
-            {"participants": [user["id"], data.receiver_id]},
-            {"participants": [data.receiver_id, user["id"]]}
-        ]
-    }, {"_id": 0})
-    
-    if not conversation:
-        conversation = {
-            "id": str(uuid.uuid4()),
-            "participants": [user["id"], data.receiver_id],
-            "last_message": None,
-            "last_message_at": None,
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        await db.conversations.insert_one(conversation)
-    
-    # Create message
-    message = {
-        "id": str(uuid.uuid4()),
-        "conversation_id": conversation["id"],
-        "sender_id": user["id"],
-        "receiver_id": data.receiver_id,
-        "content": data.content,
-        "status": "sent",  # sent, delivered, read
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    await db.messages.insert_one(message)
-    
-    # Update conversation
-    await db.conversations.update_one(
-        {"id": conversation["id"]},
-        {"$set": {
-            "last_message": data.content[:100],
-            "last_message_at": message["created_at"]
-        }}
-    )
-    
-    # Send real-time WebSocket notification to receiver
-    ws_message = {
-        "type": "new_message",
-        "message": {k: v for k, v in message.items() if k != "_id"},
-        "sender": {
-            "id": user["id"],
-            "name": user.get("name", user.get("email", "").split("@")[0])
-        }
-    }
-    await ws_manager.send_personal_message(ws_message, data.receiver_id)
-    
-    # Send SMS notification only if user is offline
-    if receiver.get("phone") and not ws_manager.is_user_online(data.receiver_id):
-        await send_sms_notification(
-            receiver["phone"],
-            "KKTCX üzerinde yeni bir mesajınız var. Giriş yaparak görüntüleyin."
-        )
-    
-    return {"success": True, "message": {k: v for k, v in message.items() if k != "_id"}}
-
-@api_router.get("/conversations")
-async def get_conversations(user: dict = Depends(get_current_user)):
-    conversations = await db.conversations.find(
-        {"participants": user["id"]},
-        {"_id": 0}
-    ).sort("last_message_at", -1).to_list(100)
-    
-    # Get other participants' info
-    for conv in conversations:
-        other_id = [p for p in conv["participants"] if p != user["id"]][0]
-        other_user = await db.users.find_one({"id": other_id}, {"_id": 0, "password": 0})
-        
-        # Get partner profile if exists
-        partner_profile = await db.partner_profiles.find_one({"user_id": other_id}, {"_id": 0})
-        
-        conv["other_user"] = {
-            "id": other_user["id"] if other_user else other_id,
-            "name": partner_profile.get("nickname") if partner_profile else (other_user.get("name") if other_user else "Unknown"),
-            "avatar": partner_profile.get("cover_image", {}).get("path") if partner_profile else None
-        }
-        
-        # Get unread count
-        unread = await db.messages.count_documents({
-            "conversation_id": conv["id"],
-            "receiver_id": user["id"],
-            "status": {"$ne": "read"}
-        })
-        conv["unread_count"] = unread
-    
-    return conversations
-
-@api_router.get("/conversations/{conversation_id}/messages")
-async def get_messages(conversation_id: str, page: int = 1, limit: int = 50, user: dict = Depends(get_current_user)):
-    # Verify user is participant
-    conversation = await db.conversations.find_one({"id": conversation_id, "participants": user["id"]})
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-    
-    skip = (page - 1) * limit
-    messages = await db.messages.find(
-        {"conversation_id": conversation_id},
-        {"_id": 0}
-    ).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
-    
-    # Mark as read
-    await db.messages.update_many(
-        {"conversation_id": conversation_id, "receiver_id": user["id"], "status": {"$ne": "read"}},
-        {"$set": {"status": "read"}}
-    )
-    
-    return list(reversed(messages))
-
-# ==================== PACKAGES ====================
-
-@api_router.get("/packages")
-async def get_packages(lang: str = "tr"):
-    packages = await db.packages.find({"is_active": True}, {"_id": 0}).to_list(100)
-    for pkg in packages:
-        pkg["name"] = pkg.get(f"name_{lang}", pkg.get("name_en", ""))
-    return packages
-
-@api_router.post("/admin/packages")
-async def create_package(data: PackageCreate, admin: dict = Depends(require_admin)):
-    package = {
-        "id": str(uuid.uuid4()),
-        "name_tr": data.name_tr,
-        "name_en": data.name_en,
-        "name_ru": data.name_ru,
-        "name_de": data.name_de,
-        "package_type": data.package_type,
-        "price": data.price,
-        "duration_days": data.duration_days,
-        "priority_score": data.priority_score,
-        "features": data.features,
-        "is_active": True,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    await db.packages.insert_one(package)
-    return {"success": True, "package": {k: v for k, v in package.items() if k != "_id"}}
-
-@api_router.put("/admin/packages/{package_id}")
-async def update_package(
-    package_id: str,
-    price: Optional[float] = None,
-    duration_days: Optional[int] = None,
-    priority_score: Optional[int] = None,
-    is_active: Optional[bool] = None,
-    name_tr: Optional[str] = None,
-    name_en: Optional[str] = None,
-    admin: dict = Depends(require_admin)
-):
-    package = await db.packages.find_one({"id": package_id})
-    if not package:
-        raise HTTPException(status_code=404, detail="Package not found")
-    
-    updates = {}
-    if price is not None:
-        updates["price"] = price
-    if duration_days is not None:
-        updates["duration_days"] = duration_days
-    if priority_score is not None:
-        updates["priority_score"] = priority_score
-    if is_active is not None:
-        updates["is_active"] = is_active
-    if name_tr is not None:
-        updates["name_tr"] = name_tr
-    if name_en is not None:
-        updates["name_en"] = name_en
-    
-    if updates:
-        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
-        await db.packages.update_one({"id": package_id}, {"$set": updates})
-    
-    return {"success": True}
-
-# ==================== STRIPE PAYMENTS ====================
-
-@api_router.post("/payments/checkout")
-async def create_checkout(
-    package_id: str,
-    origin_url: str,
-    user: dict = Depends(require_partner)
-):
-    from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
-    
-    # Get package
-    package = await db.packages.find_one({"id": package_id, "is_active": True})
-    if not package:
-        raise HTTPException(status_code=404, detail="Package not found")
-    
-    # Get Stripe settings
-    stripe_settings = await db.settings.find_one({"key": "stripe"}, {"_id": 0})
-    api_key = stripe_settings.get("value", {}).get("api_key", STRIPE_API_KEY) if stripe_settings else STRIPE_API_KEY
-    
-    success_url = f"{origin_url}/partner/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
-    cancel_url = f"{origin_url}/partner/packages"
-    
-    stripe_checkout = StripeCheckout(
-        api_key=api_key,
-        webhook_url=f"{origin_url}/api/webhook/stripe"
-    )
-    
-    checkout_request = CheckoutSessionRequest(
-        amount=float(package["price"]),
-        currency="usd",
-        success_url=success_url,
-        cancel_url=cancel_url,
-        metadata={
-            "user_id": user["id"],
-            "package_id": package_id,
-            "package_type": package["package_type"]
-        }
-    )
-    
-    session = await stripe_checkout.create_checkout_session(checkout_request)
-    
-    # Create payment transaction
-    await db.payment_transactions.insert_one({
-        "id": str(uuid.uuid4()),
-        "user_id": user["id"],
-        "package_id": package_id,
-        "session_id": session.session_id,
-        "amount": float(package["price"]),
-        "currency": "usd",
-        "status": "pending",
-        "payment_status": "initiated",
-        "created_at": datetime.now(timezone.utc).isoformat()
-    })
-    
-    return {"url": session.url, "session_id": session.session_id}
-
-@api_router.get("/payments/status/{session_id}")
-async def get_payment_status(session_id: str, user: dict = Depends(get_current_user)):
-    from emergentintegrations.payments.stripe.checkout import StripeCheckout
-    
-    transaction = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
-    if not transaction:
-        raise HTTPException(status_code=404, detail="Transaction not found")
-    
-    # Get Stripe settings
-    stripe_settings = await db.settings.find_one({"key": "stripe"}, {"_id": 0})
-    api_key = stripe_settings.get("value", {}).get("api_key", STRIPE_API_KEY) if stripe_settings else STRIPE_API_KEY
-    
-    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url="")
-    status = await stripe_checkout.get_checkout_status(session_id)
-    
-    # Update transaction
-    if status.payment_status == "paid" and transaction["payment_status"] != "paid":
-        # Apply package to profile
-        package = await db.packages.find_one({"id": transaction["package_id"]})
-        if package:
-            expires_at = (datetime.now(timezone.utc) + timedelta(days=package["duration_days"])).isoformat()
-            await db.partner_profiles.update_one(
-                {"user_id": transaction["user_id"]},
-                {"$set": {
-                    "package_type": package["package_type"],
-                    "package_expires_at": expires_at,
-                    "is_featured": package["package_type"] in ["featured", "premium"],
-                    "is_vitrin": package["package_type"] in ["city_vitrin", "homepage_vitrin", "premium"],
-                    "priority_score": package["priority_score"]
-                }}
-            )
-        
-        await db.payment_transactions.update_one(
-            {"session_id": session_id},
-            {"$set": {"status": "completed", "payment_status": "paid"}}
-        )
-    
-    return {
-        "status": status.status,
-        "payment_status": status.payment_status,
-        "amount": status.amount_total / 100,
-        "currency": status.currency
-    }
-
-@api_router.post("/webhook/stripe")
-async def stripe_webhook(request: Request):
-    from emergentintegrations.payments.stripe.checkout import StripeCheckout
-    
-    body = await request.body()
-    signature = request.headers.get("Stripe-Signature")
-    
-    stripe_settings = await db.settings.find_one({"key": "stripe"}, {"_id": 0})
-    api_key = stripe_settings.get("value", {}).get("api_key", STRIPE_API_KEY) if stripe_settings else STRIPE_API_KEY
-    
-    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url="")
-    
-    try:
-        event = await stripe_checkout.handle_webhook(body, signature)
-        
-        if event.payment_status == "paid":
-            transaction = await db.payment_transactions.find_one({"session_id": event.session_id})
-            if transaction and transaction["payment_status"] != "paid":
-                package = await db.packages.find_one({"id": transaction["package_id"]})
-                if package:
-                    expires_at = (datetime.now(timezone.utc) + timedelta(days=package["duration_days"])).isoformat()
-                    await db.partner_profiles.update_one(
-                        {"user_id": transaction["user_id"]},
-                        {"$set": {
-                            "package_type": package["package_type"],
-                            "package_expires_at": expires_at,
-                            "is_featured": package["package_type"] in ["featured", "premium"],
-                            "is_vitrin": package["package_type"] in ["city_vitrin", "homepage_vitrin", "premium"],
-                            "priority_score": package["priority_score"]
-                        }}
-                    )
-                
-                await db.payment_transactions.update_one(
-                    {"session_id": event.session_id},
-                    {"$set": {"status": "completed", "payment_status": "paid"}}
-                )
-        
-        return {"received": True}
-    except Exception as e:
-        logger.error(f"Webhook error: {e}")
-        return {"received": True, "error": str(e)}
-
-# ==================== ADMIN ROUTES ====================
-
-@api_router.get("/admin/dashboard")
-async def admin_dashboard(admin: dict = Depends(require_admin)):
-    total_users = await db.users.count_documents({"role": "user"})
-    total_partners = await db.users.count_documents({"role": "partner"})
-    active_partners = await db.users.count_documents({"role": "partner", "is_active": {"$ne": False}})
-    verified_partners = await db.users.count_documents({"role": "partner", "is_verified": True})
-    pending_profiles = await db.partner_profiles.count_documents({"status": "pending"})
-    approved_profiles = await db.partner_profiles.count_documents({"status": "approved"})
-    vitrin_profiles = await db.partner_profiles.count_documents({"is_vitrin": True})
-    total_messages = await db.messages.count_documents({})
-    total_sms = await db.sms_logs.count_documents({})
-    failed_sms = await db.sms_logs.count_documents({"status": "failed"})
-    
-    return {
-        "total_users": total_users,
-        "total_partners": total_partners,
-        "active_partners": active_partners,
-        "verified_partners": verified_partners,
-        "pending_profiles": pending_profiles,
-        "approved_profiles": approved_profiles,
-        "vitrin_profiles": vitrin_profiles,
-        "total_messages": total_messages,
-        "total_sms": total_sms,
-        "failed_sms": failed_sms
-    }
-
-@api_router.get("/admin/users")
-async def admin_get_users(
-    role: Optional[str] = None,
-    page: int = 1,
-    limit: int = 20,
-    admin: dict = Depends(require_admin)
-):
-    query = {}
-    if role:
-        query["role"] = role
-    
-    total = await db.users.count_documents(query)
-    skip = (page - 1) * limit
-    users = await db.users.find(query, {"_id": 0, "password": 0}).skip(skip).limit(limit).to_list(limit)
-    
-    return {"users": users, "total": total, "page": page, "limit": limit}
-
-@api_router.put("/admin/users/{user_id}")
-async def admin_update_user(
-    user_id: str,
-    is_active: Optional[bool] = None,
-    role: Optional[str] = None,
-    admin: dict = Depends(require_admin)
-):
-    updates = {}
-    if is_active is not None:
-        updates["is_active"] = is_active
-    if role:
-        updates["role"] = role
-    
-    if updates:
-        await db.users.update_one({"id": user_id}, {"$set": updates})
-    
-    return {"success": True}
-
-@api_router.get("/admin/profiles")
-async def admin_get_profiles(
-    status: Optional[str] = None,
-    page: int = 1,
-    limit: int = 20,
-    admin: dict = Depends(require_admin)
-):
-    query = {}
-    if status:
-        query["status"] = status
-    
-    total = await db.partner_profiles.count_documents(query)
-    skip = (page - 1) * limit
-    profiles = await db.partner_profiles.find(query, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
-    
-    return {"profiles": profiles, "total": total, "page": page, "limit": limit}
-
-@api_router.put("/admin/profiles/{profile_id}/approve")
-async def admin_approve_profile(profile_id: str, admin: dict = Depends(require_admin)):
-    await db.partner_profiles.update_one(
-        {"id": profile_id},
-        {"$set": {"status": "approved", "updated_at": datetime.now(timezone.utc).isoformat()}}
-    )
-    return {"success": True}
-
-@api_router.put("/admin/profiles/{profile_id}/reject")
-async def admin_reject_profile(profile_id: str, reason: str = "", admin: dict = Depends(require_admin)):
-    await db.partner_profiles.update_one(
-        {"id": profile_id},
-        {"$set": {
-            "status": "rejected",
-            "rejection_reason": reason,
-            "updated_at": datetime.now(timezone.utc).isoformat()
-        }}
-    )
-    return {"success": True}
-
-@api_router.put("/admin/profiles/{profile_id}/vitrin")
-async def admin_toggle_vitrin(profile_id: str, is_vitrin: bool, admin: dict = Depends(require_admin)):
-    await db.partner_profiles.update_one(
-        {"id": profile_id},
-        {"$set": {"is_vitrin": is_vitrin, "updated_at": datetime.now(timezone.utc).isoformat()}}
-    )
-    return {"success": True}
-
-@api_router.put("/admin/profiles/{profile_id}/featured")
-async def admin_toggle_featured(profile_id: str, is_featured: bool, admin: dict = Depends(require_admin)):
-    await db.partner_profiles.update_one(
-        {"id": profile_id},
-        {"$set": {"is_featured": is_featured, "updated_at": datetime.now(timezone.utc).isoformat()}}
-    )
-    return {"success": True}
-
-@api_router.put("/admin/profiles/{profile_id}/homepage-vitrin")
-async def admin_toggle_homepage_vitrin(profile_id: str, is_homepage_vitrin: bool, admin: dict = Depends(require_admin)):
-    """Toggle homepage premium vitrin status"""
-    await db.partner_profiles.update_one(
-        {"id": profile_id},
-        {"$set": {"is_homepage_vitrin": is_homepage_vitrin, "updated_at": datetime.now(timezone.utc).isoformat()}}
-    )
-    return {"success": True}
-
-@api_router.put("/admin/profiles/{profile_id}/city-vitrin")
-async def admin_toggle_city_vitrin(profile_id: str, is_city_vitrin: bool, admin: dict = Depends(require_admin)):
-    """Toggle city page premium vitrin status"""
-    await db.partner_profiles.update_one(
-        {"id": profile_id},
-        {"$set": {"is_city_vitrin": is_city_vitrin, "updated_at": datetime.now(timezone.utc).isoformat()}}
-    )
-    return {"success": True}
-
-@api_router.put("/admin/profiles/{profile_id}/verified")
-async def admin_toggle_verified(profile_id: str, is_verified: bool, admin: dict = Depends(require_admin)):
-    """Toggle profile verification status (verified badge)"""
-    await db.partner_profiles.update_one(
-        {"id": profile_id},
-        {"$set": {"is_verified": is_verified, "updated_at": datetime.now(timezone.utc).isoformat()}}
-    )
-    return {"success": True}
-
-@api_router.put("/admin/profiles/{profile_id}/photo")
-async def admin_update_profile_photo(profile_id: str, data: Dict[str, Any], admin: dict = Depends(require_admin)):
-    """Update profile photo URL"""
-    photo_url = data.get("photo_url")
-    cover_url = data.get("cover_url")
-    gallery = data.get("gallery", [])
-    
-    updates = {"updated_at": datetime.now(timezone.utc).isoformat()}
-    
-    if photo_url:
-        updates["photo_url"] = photo_url
-    if cover_url:
-        updates["cover_url"] = cover_url
-    if gallery:
-        updates["gallery"] = gallery
-    
-    await db.partner_profiles.update_one(
-        {"id": profile_id},
-        {"$set": updates}
-    )
-    return {"success": True}
-
-# ==================== MEDIA MANAGEMENT ====================
-
-@api_router.get("/admin/media")
-async def admin_get_media(
-    type: Optional[str] = None,
-    search: Optional[str] = None,
-    partner_id: Optional[str] = None,
-    page: int = 1,
-    limit: int = 50,
-    admin: dict = Depends(require_admin)
-):
-    """Get all uploaded media files"""
-    query = {}
-    
-    if type:
-        if type == "image":
-            query["content_type"] = {"$regex": "^image/"}
-        elif type == "video":
-            query["content_type"] = {"$regex": "^video/"}
-        elif type == "document":
-            query["content_type"] = {"$regex": "^application/"}
-    
-    if search:
-        query["filename"] = {"$regex": search, "$options": "i"}
-    
-    if partner_id:
-        query["user_id"] = partner_id
-    
-    total = await db.media_files.count_documents(query)
-    skip = (page - 1) * limit
-    
-    files = await db.media_files.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
-    
-    # Calculate storage stats
-    pipeline = [
-        {"$group": {
-            "_id": None,
-            "total_size": {"$sum": "$size"},
-            "total_files": {"$sum": 1}
-        }}
-    ]
-    stats_result = await db.media_files.aggregate(pipeline).to_list(1)
-    storage_stats = stats_result[0] if stats_result else {"total_size": 0, "total_files": 0}
-    
-    return {
-        "files": files,
-        "total": total,
-        "page": page,
-        "limit": limit,
-        "storage": {
-            "total_size": storage_stats.get("total_size", 0),
-            "total_files": storage_stats.get("total_files", 0)
-        }
-    }
-
-@api_router.post("/admin/media/upload")
-async def admin_upload_media(
-    file: UploadFile,
-    admin: dict = Depends(require_admin)
-):
-    """Upload a media file (admin)"""
-    # Generate unique filename
-    ext = file.filename.split('.')[-1] if '.' in file.filename else 'bin'
-    unique_filename = f"admin/{str(uuid.uuid4())}.{ext}"
-    
-    # Read file content
-    content = await file.read()
-    file_size = len(content)
-    
-    # Save to storage (using local storage or object storage)
-    file_path = f"/app/backend/uploads/{unique_filename}"
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    
-    with open(file_path, 'wb') as f:
-        f.write(content)
-    
-    # Save metadata to database
-    media_doc = {
-        "id": str(uuid.uuid4()),
-        "filename": file.filename,
-        "path": unique_filename,
-        "content_type": file.content_type or "application/octet-stream",
-        "type": file.content_type.split('/')[0] if file.content_type else "file",
-        "size": file_size,
-        "uploaded_by": admin["id"],
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    
-    await db.media_files.insert_one(media_doc)
-    
-    return {
-        "success": True,
-        "file": {k: v for k, v in media_doc.items() if k != "_id"}
-    }
-
-@api_router.delete("/admin/media/{file_id}")
-async def admin_delete_media(file_id: str, admin: dict = Depends(require_admin)):
-    """Delete a media file"""
-    # Find the file
-    file_doc = await db.media_files.find_one({"id": file_id})
-    if not file_doc:
-        raise HTTPException(status_code=404, detail="File not found")
-    
-    # Delete from storage
-    file_path = f"/app/backend/uploads/{file_doc.get('path', '')}"
-    if os.path.exists(file_path):
-        os.remove(file_path)
-    
-    # Delete from database
-    await db.media_files.delete_one({"id": file_id})
-    
-    return {"success": True}
-
-@api_router.get("/admin/media/stats")
-async def admin_media_stats(admin: dict = Depends(require_admin)):
-    """Get media storage statistics"""
-    pipeline = [
-        {"$group": {
-            "_id": "$type",
-            "count": {"$sum": 1},
-            "total_size": {"$sum": "$size"}
-        }}
-    ]
-    
-    stats = await db.media_files.aggregate(pipeline).to_list(10)
-    
-    total_size = sum(s.get("total_size", 0) for s in stats)
-    total_files = sum(s.get("count", 0) for s in stats)
-    
-    return {
-        "by_type": {s["_id"]: {"count": s["count"], "size": s["total_size"]} for s in stats if s["_id"]},
-        "total_size": total_size,
-        "total_files": total_files
-    }
-
-# ==================== SETTINGS ====================
-
-@api_router.get("/admin/settings")
-async def admin_get_settings(admin: dict = Depends(require_admin)):
-    settings = await db.settings.find({}, {"_id": 0}).to_list(100)
-    return {s["key"]: s.get("value", {}) for s in settings}
-
-@api_router.put("/admin/settings/{key}")
-async def admin_update_setting(key: str, value: Dict[str, Any], admin: dict = Depends(require_admin)):
-    await db.settings.update_one(
-        {"key": key},
-        {"$set": {"key": key, "value": value, "updated_at": datetime.now(timezone.utc).isoformat()}},
-        upsert=True
-    )
-    return {"success": True}
-
-@api_router.get("/admin/sms-logs")
-async def admin_get_sms_logs(
-    status: Optional[str] = None,
-    page: int = 1,
-    limit: int = 50,
-    admin: dict = Depends(require_admin)
-):
-    query = {}
-    if status:
-        query["status"] = status
-    
-    total = await db.sms_logs.count_documents(query)
-    skip = (page - 1) * limit
-    logs = await db.sms_logs.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
-    
-    return {"logs": logs, "total": total, "page": page, "limit": limit}
-
-@api_router.get("/admin/sms/logs")
-async def admin_get_sms_logs_v2(
-    status: Optional[str] = None,
-    page: int = 1,
-    limit: int = 50,
-    admin: dict = Depends(require_admin)
-):
-    """Get SMS logs (v2 endpoint)"""
-    query = {}
-    if status:
-        query["status"] = status
-    
-    total = await db.sms_logs.count_documents(query)
-    skip = (page - 1) * limit
-    logs = await db.sms_logs.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
-    
-    return {"logs": logs, "total": total, "page": page, "limit": limit}
-
-@api_router.post("/admin/sms/test")
-async def admin_send_test_sms(
-    data: Dict[str, str],
-    admin: dict = Depends(require_admin)
-):
-    """Send test SMS"""
-    phone = data.get("phone", "")
-    message = data.get("message", "KKTCX test mesajı")
-    
-    if not phone:
-        raise HTTPException(status_code=400, detail="Phone number required")
-    
-    result = await send_sms_notification(phone, message)
-    return {"success": result, "error": None if result else "SMS gönderilemedi"}
-
-# ==================== TRANSLATIONS ====================
-
-@api_router.get("/translations/{lang}")
-async def get_translations(lang: str):
-    translations = await db.translations.find_one({"lang": lang}, {"_id": 0})
-    return translations.get("data", {}) if translations else {}
-
-@api_router.put("/admin/translations/{lang}")
-async def update_translations(lang: str, data: Dict[str, str], admin: dict = Depends(require_admin)):
-    await db.translations.update_one(
-        {"lang": lang},
-        {"$set": {"lang": lang, "data": data, "updated_at": datetime.now(timezone.utc).isoformat()}},
-        upsert=True
-    )
-    return {"success": True}
-
-# ==================== SEO ====================
-
-@api_router.get("/sitemap.xml")
-async def get_sitemap():
-    """Generate dynamic sitemap.xml"""
-    from fastapi.responses import Response
-    
-    # Get all cities
-    cities = await db.cities.find({}, {"slug": 1, "_id": 0}).to_list(100)
-    
-    # Get all approved partner profiles
-    profiles = await db.partner_profiles.find(
-        {"status": "approved"},
-        {"slug": 1, "_id": 0}
-    ).to_list(1000)
-    
-    # Base URL (replace with actual domain in production)
-    base_url = "https://kktcx.com"
-    languages = ["tr", "en", "ru", "de", "el"]
-    
-    # Static pages
-    static_pages = ["", "/partnerler", "/hakkimizda", "/iletisim", "/sss", "/gizlilik", "/kullanim-sartlari"]
-    
-    urls = []
-    
-    # Add static pages for each language
-    for lang in languages:
-        for page in static_pages:
-            urls.append(f"{base_url}/{lang}{page}")
-    
-    # Add city pages
-    for city in cities:
-        if city.get("slug"):
-            for lang in languages:
-                urls.append(f"{base_url}/{lang}/sehir/{city['slug']}")
-    
-    # Add partner profile pages
-    for profile in profiles:
-        if profile.get("slug"):
-            for lang in languages:
-                urls.append(f"{base_url}/{lang}/partner/{profile['slug']}")
-    
-    # Generate XML
-    xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n'
-    xml_content += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-    
-    for url in urls:
-        xml_content += f'  <url>\n    <loc>{url}</loc>\n    <changefreq>weekly</changefreq>\n  </url>\n'
-    
-    xml_content += '</urlset>'
-    
-    return Response(content=xml_content, media_type="application/xml")
-
-@api_router.get("/robots.txt")
-async def get_robots():
-    """Generate robots.txt from settings"""
-    from fastapi.responses import PlainTextResponse
-    
-    # Get robots settings
-    robots_settings = await db.settings.find_one({"key": "seo_robots"}, {"_id": 0})
-    
-    if robots_settings and robots_settings.get("value"):
-        settings = robots_settings["value"]
-        
-        lines = ["User-agent: *"]
-        
-        if settings.get("allow_indexing", True):
-            lines.append("Allow: /")
-        else:
-            lines.append("Disallow: /")
-        
-        if settings.get("allow_follow", True):
-            pass  # Default is follow
-        
-        # Add custom rules
-        if settings.get("custom_rules"):
-            lines.append("")
-            lines.extend(settings["custom_rules"].strip().split("\n"))
-        
-        # Add sitemap
-        if settings.get("sitemap_url"):
-            lines.append("")
-            lines.append(f"Sitemap: {settings['sitemap_url']}")
-        else:
-            lines.append("")
-            lines.append("Sitemap: https://kktcx.com/api/sitemap.xml")
-        
-        return PlainTextResponse("\n".join(lines))
-    
-    # Default robots.txt
-    default_robots = """User-agent: *
-Allow: /
-
-Sitemap: https://kktcx.com/api/sitemap.xml"""
-    
-    return PlainTextResponse(default_robots)
-
-@api_router.get("/seo/{page_slug}")
-async def get_seo(page_slug: str, lang: str = "tr"):
-    seo = await db.seo_pages.find_one({"slug": page_slug}, {"_id": 0})
-    if not seo:
-        return {}
-    
-    return {
-        "title": seo.get(f"title_{lang}", seo.get("title_en", "")),
-        "description": seo.get(f"description_{lang}", seo.get("description_en", "")),
-        "keywords": seo.get(f"keywords_{lang}", seo.get("keywords_en", "")),
-        "og_image": seo.get("og_image", "")
-    }
-
-@api_router.get("/admin/seo")
-async def admin_get_seo(admin: dict = Depends(require_admin)):
-    """Get all SEO settings"""
-    global_seo = await db.settings.find_one({"key": "seo_global"}, {"_id": 0})
-    pages_seo = await db.seo_pages.find({}, {"_id": 0}).to_list(100)
-    robots_seo = await db.settings.find_one({"key": "seo_robots"}, {"_id": 0})
-    structured_data = await db.settings.find_one({"key": "seo_structured_data"}, {"_id": 0})
-    
-    return {
-        "global": global_seo.get("value", {}) if global_seo else {},
-        "pages": pages_seo or [],
-        "robots": robots_seo.get("value", {}) if robots_seo else {},
-        "structured_data": structured_data.get("value", {}) if structured_data else {}
-    }
-
-@api_router.put("/admin/seo/{section}")
-async def admin_update_seo(
-    section: str,
-    request: Request,
-    admin: dict = Depends(require_admin)
-):
-    """Update SEO settings by section (global, pages, robots, structured_data)"""
-    data = await request.json()
-    
-    if section == "global":
-        await db.settings.update_one(
-            {"key": "seo_global"},
-            {"$set": {"key": "seo_global", "value": data, "updated_at": datetime.now(timezone.utc).isoformat()}},
-            upsert=True
-        )
-    elif section == "pages":
-        # Update each page's SEO - data can be a list of pages
-        pages_list = data if isinstance(data, list) else [data]
-        for page in pages_list:
-            await db.seo_pages.update_one(
-                {"slug": page.get("slug")},
-                {"$set": {**page, "updated_at": datetime.now(timezone.utc).isoformat()}},
-                upsert=True
-            )
-    elif section == "robots":
-        await db.settings.update_one(
-            {"key": "seo_robots"},
-            {"$set": {"key": "seo_robots", "value": data, "updated_at": datetime.now(timezone.utc).isoformat()}},
-            upsert=True
-        )
-    elif section == "structured_data":
-        await db.settings.update_one(
-            {"key": "seo_structured_data"},
-            {"$set": {"key": "seo_structured_data", "value": data, "updated_at": datetime.now(timezone.utc).isoformat()}},
-            upsert=True
-        )
-    return {"success": True}
-
-# ==================== CONTENT MANAGEMENT ====================
-
-@api_router.get("/admin/content")
-async def admin_get_content(admin: dict = Depends(require_admin)):
-    """Get all page content"""
-    contents = await db.page_content.find({}, {"_id": 0}).to_list(100)
-    result = {}
-    for content in contents:
-        page = content.get("page")
-        lang = content.get("lang")
-        if page not in result:
-            result[page] = {}
-        result[page][lang] = content.get("data", {})
-    return result
-
-@api_router.put("/admin/content/{page}")
-async def admin_update_content(
-    page: str,
-    data: Dict[str, Any],
-    admin: dict = Depends(require_admin)
-):
-    """Update page content for all languages"""
-    for lang, content in data.items():
-        await db.page_content.update_one(
-            {"page": page, "lang": lang},
-            {"$set": {
-                "page": page,
-                "lang": lang,
-                "data": content,
-                "updated_at": datetime.now(timezone.utc).isoformat()
-            }},
-            upsert=True
-        )
-    return {"success": True}
-
-@api_router.get("/content/{page}")
-async def get_page_content(page: str, lang: str = "tr"):
-    """Get content for a specific page and language"""
-    content = await db.page_content.find_one(
-        {"page": page, "lang": lang}, 
-        {"_id": 0}
-    )
-    if not content:
-        # Fallback to English
-        content = await db.page_content.find_one(
-            {"page": page, "lang": "en"}, 
-            {"_id": 0}
-        )
-    return content.get("data", {}) if content else {}
-
-# ==================== VITRIN / HOMEPAGE DATA ====================
-
-@api_router.get("/homepage")
-async def get_homepage_data(lang: str = "tr"):
-    # Get homepage vitrin profiles (Premium - Highest tier)
-    homepage_vitrin = await db.partner_profiles.find(
-        {"status": "approved", "is_homepage_vitrin": True},
-        {"_id": 0}
-    ).sort("priority_score", -1).limit(4).to_list(4)
-    
-    # Get regular vitrin profiles
-    vitrin_profiles = await db.partner_profiles.find(
-        {"status": "approved", "is_vitrin": True},
-        {"_id": 0}
-    ).sort("priority_score", -1).limit(8).to_list(8)
-    
-    # Get featured profiles
-    featured_profiles = await db.partner_profiles.find(
-        {"status": "approved", "is_featured": True},
-        {"_id": 0}
-    ).sort("priority_score", -1).limit(8).to_list(8)
-    
-    # Get today available
-    today_available = await db.partner_profiles.find(
-        {"status": "approved", "is_available_today": True},
-        {"_id": 0}
-    ).sort("priority_score", -1).limit(8).to_list(8)
-    
-    # Get new profiles (recently approved)
-    new_profiles = await db.partner_profiles.find(
-        {"status": "approved"},
-        {"_id": 0}
-    ).sort("created_at", -1).limit(8).to_list(8)
-    
-    # Get cities with partner counts
-    cities = await db.cities.find({}, {"_id": 0}).to_list(100)
-    for city in cities:
-        city["name"] = city.get(f"name_{lang}", city.get("name_en", ""))
-        city["partner_count"] = await db.partner_profiles.count_documents(
-            {"city_id": city["id"], "status": "approved"}
-        )
-        # Get city vitrin profiles
-        city["vitrin_profiles"] = await db.partner_profiles.find(
-            {"city_id": city["id"], "status": "approved", "is_city_vitrin": True},
-            {"_id": 0}
-        ).sort("priority_score", -1).limit(4).to_list(4)
-    
-    # Enrich profiles with city names
-    city_map = {c["id"]: c for c in cities}
-    for profiles in [homepage_vitrin, vitrin_profiles, featured_profiles, today_available, new_profiles]:
-        for p in profiles:
-            city = city_map.get(p.get("city_id"), {})
-            p["city_name"] = city.get("name", "")
-    
-    # Also enrich city vitrin profiles
-    for city in cities:
-        for p in city.get("vitrin_profiles", []):
-            p["city_name"] = city.get("name", "")
-    
-    # Get categories
-    categories = await db.categories.find({}, {"_id": 0}).to_list(100)
-    for cat in categories:
-        cat["name"] = cat.get(f"name_{lang}", cat.get("name_en", ""))
-    
-    # Get total counts for stats
-    total_profiles = await db.partner_profiles.count_documents({"status": "approved"})
-    total_cities = len([c for c in cities if c["partner_count"] > 0])
-    
-    return {
-        "homepage_vitrin": homepage_vitrin,  # Premium showcase (top tier)
-        "vitrin_profiles": vitrin_profiles,
-        "featured_profiles": featured_profiles,
-        "today_available": today_available,
-        "new_profiles": new_profiles,
-        "cities": cities,  # Return all cities (both North and South Cyprus)
-        "categories": categories,
-        "stats": {
-            "total_profiles": total_profiles,
-            "total_cities": len(cities)
-        }
-    }
-
-# ==================== HEALTH CHECK ====================
-
-@api_router.get("/")
-async def root():
-    return {"message": "KKTCX API v1.0"}
-
-@api_router.get("/health")
-async def health():
-    return {"status": "healthy"}
-
-# ==================== APPOINTMENT ENDPOINTS ====================
-
-class AppointmentStatus:
-    PENDING = "pending"
-    CONFIRMED = "confirmed"
-    REJECTED = "rejected"
-    CANCELLED = "cancelled"
-    COMPLETED = "completed"
-
-class AppointmentCreate(BaseModel):
-    partner_id: str
-    date: str  # ISO date string YYYY-MM-DD
-    time_slot: str  # e.g., "14:00"
-    duration_id: str  # Reference to partner's duration option
-    notes: Optional[str] = None
-
-class AvailabilitySettings(BaseModel):
-    working_days: List[int] = [1, 2, 3, 4, 5, 6]  # 0=Sunday, 1=Monday, etc.
-    working_hours_start: str = "10:00"
-    working_hours_end: str = "22:00"
-    slot_duration: int = 60  # minutes
-    break_between_slots: int = 15  # minutes
-    auto_confirm: bool = False  # If True, appointments are auto-confirmed
-    blocked_dates: List[str] = []  # ISO date strings
-
-class DurationOption(BaseModel):
-    id: str
-    label: str  # e.g., "1 Saat", "2 Saat", "Yarım Gün"
-    minutes: int
-    price: Optional[float] = None
-
-@api_router.get("/availability/{partner_id}")
-async def get_partner_availability(
-    partner_id: str,
-    date: Optional[str] = None,
-    month: Optional[str] = None
-):
-    """Get partner's availability settings and booked slots"""
-    profile = await db.partner_profiles.find_one({"id": partner_id}, {"_id": 0})
-    if not profile:
-        raise HTTPException(status_code=404, detail="Partner not found")
-    
-    settings = profile.get("availability_settings", {
-        "working_days": [1, 2, 3, 4, 5, 6],
-        "working_hours_start": "10:00",
-        "working_hours_end": "22:00",
-        "slot_duration": 60,
-        "break_between_slots": 15,
-        "auto_confirm": False,
-        "blocked_dates": []
-    })
-    
-    durations = profile.get("duration_options", [
-        {"id": "1h", "label": "1 Saat", "minutes": 60, "price": profile.get("hourly_rate", 100)},
-        {"id": "2h", "label": "2 Saat", "minutes": 120, "price": (profile.get("hourly_rate", 100) * 1.8)},
-        {"id": "half_day", "label": "Yarım Gün (4 Saat)", "minutes": 240, "price": (profile.get("hourly_rate", 100) * 3.5)},
-        {"id": "full_day", "label": "Tam Gün (8 Saat)", "minutes": 480, "price": (profile.get("hourly_rate", 100) * 6)}
-    ])
-    
-    query = {"partner_id": partner_id, "status": {"$in": ["pending", "confirmed"]}}
-    if date:
-        query["date"] = date
-    elif month:
-        query["date"] = {"$regex": f"^{month}"}
-    
-    booked_slots = []
-    cursor = db.appointments.find(query, {"_id": 0, "date": 1, "time_slot": 1, "duration_minutes": 1, "status": 1})
-    async for appt in cursor:
-        booked_slots.append(appt)
-    
-    return {"partner_id": partner_id, "settings": settings, "durations": durations, "booked_slots": booked_slots}
-
-@api_router.post("/appointments")
-async def create_appointment(data: AppointmentCreate, user: dict = Depends(get_current_user)):
-    """Create a new appointment request"""
-    profile = await db.partner_profiles.find_one({"id": data.partner_id}, {"_id": 0})
-    if not profile:
-        raise HTTPException(status_code=404, detail="Partner not found")
-    
-    durations = profile.get("duration_options", [
-        {"id": "1h", "label": "1 Saat", "minutes": 60, "price": profile.get("hourly_rate", 100)},
-        {"id": "2h", "label": "2 Saat", "minutes": 120, "price": (profile.get("hourly_rate", 100) * 1.8)},
-        {"id": "half_day", "label": "Yarım Gün (4 Saat)", "minutes": 240, "price": (profile.get("hourly_rate", 100) * 3.5)},
-        {"id": "full_day", "label": "Tam Gün (8 Saat)", "minutes": 480, "price": (profile.get("hourly_rate", 100) * 6)}
-    ])
-    
-    duration = next((d for d in durations if d["id"] == data.duration_id), None)
-    if not duration:
-        raise HTTPException(status_code=400, detail="Invalid duration option")
-    
-    existing = await db.appointments.find_one({
-        "partner_id": data.partner_id,
-        "date": data.date,
-        "time_slot": data.time_slot,
-        "status": {"$in": ["pending", "confirmed"]}
-    })
-    if existing:
-        raise HTTPException(status_code=400, detail="This time slot is already booked")
-    
-    settings = profile.get("availability_settings", {"auto_confirm": False})
-    status = AppointmentStatus.CONFIRMED if settings.get("auto_confirm") else AppointmentStatus.PENDING
-    
-    appointment_id = str(uuid.uuid4())
-    appointment = {
-        "id": appointment_id,
-        "user_id": user["id"],
-        "partner_id": data.partner_id,
-        "date": data.date,
-        "time_slot": data.time_slot,
-        "duration_minutes": duration["minutes"],
-        "duration_label": duration["label"],
-        "price": duration.get("price"),
-        "notes": data.notes,
-        "status": status,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "updated_at": None
-    }
-    
-    await db.appointments.insert_one(appointment)
-    return {k: v for k, v in appointment.items() if k != "_id"}
-
-@api_router.get("/appointments")
-async def get_user_appointments(status: Optional[str] = None, page: int = 1, limit: int = 20, user: dict = Depends(get_current_user)):
-    """Get appointments for current user"""
-    skip = (page - 1) * limit
-    is_partner = user.get("role") == "partner"
-    profile = None
-    if is_partner:
-        profile = await db.partner_profiles.find_one({"user_id": user["id"]}, {"_id": 0, "id": 1})
-    
-    if is_partner and profile:
-        query = {"$or": [{"user_id": user["id"]}, {"partner_id": profile["id"]}]}
-    else:
-        query = {"user_id": user["id"]}
-    
-    if status:
-        query["status"] = status
-    
-    total = await db.appointments.count_documents(query)
-    cursor = db.appointments.find(query, {"_id": 0}).sort("date", -1).skip(skip).limit(limit)
-    appointments = await cursor.to_list(limit)
-    
-    enriched = []
-    for appt in appointments:
-        partner = await db.partner_profiles.find_one({"id": appt["partner_id"]}, {"_id": 0, "nickname": 1, "photo_url": 1})
-        if partner:
-            appt["partner_name"] = partner.get("nickname", "")
-            appt["partner_photo"] = partner.get("photo_url", "")
-        if is_partner:
-            user_info = await db.users.find_one({"id": appt["user_id"]}, {"_id": 0, "name": 1, "email": 1})
-            if user_info:
-                appt["user_name"] = user_info.get("name", user_info.get("email", "").split("@")[0])
-        enriched.append(appt)
-    
-    return {"appointments": enriched, "total": total, "page": page, "limit": limit, "pages": (total + limit - 1) // limit}
-
-@api_router.put("/appointments/{appointment_id}/status")
-async def update_appointment_status(appointment_id: str, status: str, user: dict = Depends(get_current_user)):
-    """Update appointment status"""
-    if status not in [AppointmentStatus.CONFIRMED, AppointmentStatus.REJECTED, AppointmentStatus.CANCELLED]:
-        raise HTTPException(status_code=400, detail="Invalid status")
-    
-    appointment = await db.appointments.find_one({"id": appointment_id}, {"_id": 0})
-    if not appointment:
-        raise HTTPException(status_code=404, detail="Appointment not found")
-    
-    is_partner = user.get("role") == "partner"
-    profile = None
-    if is_partner:
-        profile = await db.partner_profiles.find_one({"user_id": user["id"]}, {"_id": 0, "id": 1})
-    
-    can_modify = False
-    if status == AppointmentStatus.CANCELLED and appointment["user_id"] == user["id"]:
-        can_modify = True
-    elif status in [AppointmentStatus.CONFIRMED, AppointmentStatus.REJECTED] and profile and profile["id"] == appointment["partner_id"]:
-        can_modify = True
-    
-    if not can_modify:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
-    await db.appointments.update_one({"id": appointment_id}, {"$set": {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}})
-    return {"success": True, "status": status}
-
-@api_router.put("/partner/availability")
-async def update_partner_availability(settings: AvailabilitySettings, user: dict = Depends(get_current_user)):
-    """Update partner's availability settings"""
-    if user.get("role") != "partner":
-        raise HTTPException(status_code=403, detail="Only partners can update availability")
-    
-    profile = await db.partner_profiles.find_one({"user_id": user["id"]}, {"_id": 0, "id": 1})
-    if not profile:
-        raise HTTPException(status_code=404, detail="Partner profile not found")
-    
-    await db.partner_profiles.update_one({"id": profile["id"]}, {"$set": {"availability_settings": settings.dict()}})
-    return {"success": True}
-
-@api_router.put("/partner/durations")
-async def update_partner_durations(durations: List[DurationOption], user: dict = Depends(get_current_user)):
-    """Update partner's duration options"""
-    if user.get("role") != "partner":
-        raise HTTPException(status_code=403, detail="Only partners can update duration options")
-    
-    profile = await db.partner_profiles.find_one({"user_id": user["id"]}, {"_id": 0, "id": 1})
-    if not profile:
-        raise HTTPException(status_code=404, detail="Partner profile not found")
-    
-    await db.partner_profiles.update_one({"id": profile["id"]}, {"$set": {"duration_options": [d.dict() for d in durations]}})
-    return {"success": True}
-
-# ==================== ADMIN APPOINTMENTS ====================
-
-@api_router.get("/admin/appointments")
-async def admin_get_appointments(
-    status: Optional[str] = None,
-    partner_id: Optional[str] = None,
-    user_id: Optional[str] = None,
-    page: int = 1,
-    limit: int = 20,
-    admin: dict = Depends(require_admin)
-):
-    """Get all appointments (admin only)"""
-    query = {}
-    if status:
-        query["status"] = status
-    if partner_id:
-        query["partner_id"] = partner_id
-    if user_id:
-        query["user_id"] = user_id
-    
-    total = await db.appointments.count_documents(query)
-    skip = (page - 1) * limit
-    
-    cursor = db.appointments.find(query, {"_id": 0}).sort("date", -1).skip(skip).limit(limit)
-    appointments = await cursor.to_list(limit)
-    
-    # Enrich with partner and user info
-    enriched = []
-    for appt in appointments:
-        # Get partner info
-        partner = await db.partner_profiles.find_one({"id": appt.get("partner_id")}, {"_id": 0})
-        if partner:
-            appt["partner_name"] = partner.get("nickname", "Partner")
-            appt["partner_city"] = partner.get("city_name", "")
-            # Get profile photo
-            if partner.get("cover_image"):
-                appt["partner_photo"] = f"/api/files/{partner['cover_image'].get('path', '')}"
-            elif partner.get("images") and len(partner["images"]) > 0:
-                appt["partner_photo"] = f"/api/files/{partner['images'][0].get('path', '')}"
-        
-        # Get user info
-        user = await db.users.find_one({"id": appt.get("user_id")}, {"_id": 0, "password": 0})
-        if user:
-            appt["user_name"] = user.get("name", user.get("email", "").split("@")[0])
-            appt["user_email"] = user.get("email", "")
-        
-        enriched.append(appt)
-    
-    return {"appointments": enriched, "total": total, "page": page, "limit": limit, "pages": (total + limit - 1) // limit}
-
-@api_router.get("/admin/appointments/stats")
-async def admin_appointments_stats(admin: dict = Depends(require_admin)):
-    """Get appointment statistics"""
-    total = await db.appointments.count_documents({})
-    pending = await db.appointments.count_documents({"status": "pending"})
-    confirmed = await db.appointments.count_documents({"status": "confirmed"})
-    completed = await db.appointments.count_documents({"status": "completed"})
-    cancelled = await db.appointments.count_documents({"status": {"$in": ["cancelled", "rejected"]}})
-    
-    return {
-        "total": total,
-        "pending": pending,
-        "confirmed": confirmed,
-        "completed": completed,
-        "cancelled": cancelled
-    }
-
-@api_router.put("/admin/appointments/{appointment_id}/status")
-async def admin_update_appointment_status(
-    appointment_id: str,
-    status: str = Query(..., description="New status"),
-    admin: dict = Depends(require_admin)
-):
-    """Update appointment status (admin only)"""
-    valid_statuses = ["pending", "confirmed", "rejected", "cancelled", "completed"]
-    if status not in valid_statuses:
-        raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
-    
-    appointment = await db.appointments.find_one({"id": appointment_id})
-    if not appointment:
-        raise HTTPException(status_code=404, detail="Appointment not found")
-    
-    await db.appointments.update_one(
-        {"id": appointment_id}, 
-        {"$set": {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}}
-    )
-    
-    return {"success": True}
-
-# ==================== ADMIN REPORTS ====================
-
-@api_router.get("/admin/reports")
-async def admin_get_reports(
-    period: str = "week",  # week, month, year
-    admin: dict = Depends(require_admin)
-):
-    """Get comprehensive reports and analytics"""
-    from datetime import timedelta
-    
-    now = datetime.now(timezone.utc)
-    
-    # Determine date range based on period
-    if period == "week":
-        start_date = now - timedelta(days=7)
-        prev_start = start_date - timedelta(days=7)
-    elif period == "month":
-        start_date = now - timedelta(days=30)
-        prev_start = start_date - timedelta(days=30)
-    else:  # year
-        start_date = now - timedelta(days=365)
-        prev_start = start_date - timedelta(days=365)
-    
-    start_iso = start_date.isoformat()
-    prev_iso = prev_start.isoformat()
-    
-    # Current period stats
-    current_users = await db.users.count_documents({"created_at": {"$gte": start_iso}})
-    current_appointments = await db.appointments.count_documents({"created_at": {"$gte": start_iso}})
-    
-    # Previous period stats for comparison
-    prev_users = await db.users.count_documents({
-        "created_at": {"$gte": prev_iso, "$lt": start_iso}
-    })
-    prev_appointments = await db.appointments.count_documents({
-        "created_at": {"$gte": prev_iso, "$lt": start_iso}
-    })
-    
-    # Calculate changes
-    user_change = ((current_users - prev_users) / max(prev_users, 1)) * 100 if prev_users else 0
-    appt_change = ((current_appointments - prev_appointments) / max(prev_appointments, 1)) * 100 if prev_appointments else 0
-    
-    # Get total views from profiles
-    pipeline = [
-        {"$group": {"_id": None, "total_views": {"$sum": "$view_count"}}}
-    ]
-    views_result = await db.partner_profiles.aggregate(pipeline).to_list(1)
-    total_views = views_result[0]["total_views"] if views_result else 0
-    
-    # Get top viewed profiles
-    top_profiles = await db.partner_profiles.find(
-        {"status": "approved"},
-        {"_id": 0, "nickname": 1, "view_count": 1, "city_id": 1}
-    ).sort("view_count", -1).limit(5).to_list(5)
-    
-    # Enrich with city names
-    for profile in top_profiles:
-        city = await db.cities.find_one({"$or": [{"id": profile.get("city_id")}, {"slug": profile.get("city_id")}]}, {"_id": 0})
-        profile["city"] = city.get("name_tr", "") if city else ""
-        profile["views"] = profile.get("view_count", 0)
-    
-    # Generate chart data (mock for now - would need time-series data)
-    days = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"]
-    views_chart = [{"label": d, "value": 500 + (i * 150) + (hash(d) % 300)} for i, d in enumerate(days)]
-    revenue_chart = [{"label": d, "value": 100 + (i * 50) + (hash(d) % 200)} for i, d in enumerate(days)]
-    
-    return {
-        "stats": {
-            "revenue": {"total": 0, "change": 0},  # Would need payment tracking
-            "views": {"total": total_views, "change": 23},
-            "users": {"total": current_users, "change": round(user_change)},
-            "appointments": {"total": current_appointments, "change": round(appt_change)}
-        },
-        "top_profiles": top_profiles,
-        "recent_activity": [],  # Would need activity logging
-        "chart_data": {
-            "views": views_chart,
-            "revenue": revenue_chart,
-            "registrations": []
-        }
-    }
-
-# Include router
-app.include_router(api_router)
-
-# CORS
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan events"""
+    logger.info("Starting KKTCX Backend...")
+    await init_indexes()
+    yield
+    logger.info("Shutting down KKTCX Backend...")
+
+
+# Create FastAPI app
+app = FastAPI(
+    title="KKTCX API",
+    description="Partner Listing Platform API",
+    version="2.0.0",
+    lifespan=lifespan
+)
+
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
+    allow_origins=CORS_ORIGINS if CORS_ORIGINS != ['*'] else ["*"],
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Startup event
-@app.on_event("startup")
-async def startup():
+# Include routers
+app.include_router(auth_router, prefix="/api")
+app.include_router(partners_router, prefix="/api")
+app.include_router(catalog_router, prefix="/api")
+app.include_router(messages_router, prefix="/api")
+app.include_router(appointments_router, prefix="/api")
+app.include_router(admin_router, prefix="/api")
+
+
+# ==================== ROOT ENDPOINTS ====================
+
+@app.get("/")
+async def root():
+    """Health check endpoint"""
+    return {"status": "healthy", "app": APP_NAME, "version": "2.0.0"}
+
+
+@app.get("/api")
+async def api_root():
+    """API info endpoint"""
+    return {"status": "healthy", "app": APP_NAME, "version": "2.0.0"}
+
+
+@app.get("/api/health")
+async def health():
+    """Health check"""
+    return {"status": "healthy"}
+
+
+# ==================== FILE SERVING ====================
+
+@app.get("/api/files/{path:path}")
+async def get_file(path: str, auth: str = Query(None), authorization: str = Header(None)):
+    """Serve files from object storage"""
     try:
-        init_storage()
-        logger.info("Storage initialized")
+        data, content_type = get_object(path)
+        return Response(content=data, media_type=content_type)
     except Exception as e:
-        logger.error(f"Storage init failed: {e}")
-    
-    # Create indexes
-    await db.users.create_index("email", unique=True)
-    await db.users.create_index("id", unique=True)
-    await db.partner_profiles.create_index("user_id", unique=True)
-    await db.partner_profiles.create_index("slug", unique=True)
-    await db.partner_profiles.create_index([("status", 1), ("priority_score", -1)])
-    await db.conversations.create_index("participants")
-    await db.messages.create_index([("conversation_id", 1), ("created_at", -1)])
-    await db.favorites.create_index([("user_id", 1), ("profile_id", 1)], unique=True)
-    
-    # Seed initial data if empty
-    if await db.cities.count_documents({}) == 0:
-        await seed_initial_data()
+        logger.error(f"File retrieval error: {e}")
+        return Response(status_code=404)
 
-async def seed_initial_data():
-    """Seed initial cities, categories, packages"""
+
+# ==================== SEO ENDPOINTS ====================
+
+@app.get("/robots.txt", response_class=PlainTextResponse)
+async def robots_txt():
+    """Generate robots.txt"""
+    settings = await db.seo.find_one({"page": "robots"}, {"_id": 0})
     
-    # ==================== CITIES ====================
-    # North Cyprus (KKTC)
-    north_cities = [
-        {"id": str(uuid.uuid4()), "name_tr": "Girne", "name_en": "Kyrenia", "name_ru": "Кирения", "name_de": "Kyrenia", "name_el": "Κερύνεια", "slug": "girne", "region": "north"},
-        {"id": str(uuid.uuid4()), "name_tr": "Lefkoşa (Kuzey)", "name_en": "North Nicosia", "name_ru": "Северная Никосия", "name_de": "Nord-Nikosia", "name_el": "Βόρεια Λευκωσία", "slug": "lefkosa-kuzey", "region": "north"},
-        {"id": str(uuid.uuid4()), "name_tr": "Gazimağusa", "name_en": "Famagusta", "name_ru": "Фамагуста", "name_de": "Famagusta", "name_el": "Αμμόχωστος", "slug": "gazimagusa", "region": "north"},
-        {"id": str(uuid.uuid4()), "name_tr": "Güzelyurt", "name_en": "Morphou", "name_ru": "Морфу", "name_de": "Morphou", "name_el": "Μόρφου", "slug": "guzelyurt", "region": "north"},
-        {"id": str(uuid.uuid4()), "name_tr": "İskele", "name_en": "Iskele", "name_ru": "Искеле", "name_de": "Iskele", "name_el": "Τρίκωμο", "slug": "iskele", "region": "north"},
-        {"id": str(uuid.uuid4()), "name_tr": "Lefke", "name_en": "Lefke", "name_ru": "Лефке", "name_de": "Lefke", "name_el": "Λεύκα", "slug": "lefke", "region": "north"},
-        {"id": str(uuid.uuid4()), "name_tr": "Dipkarpaz", "name_en": "Rizokarpaso", "name_ru": "Дипкарпаз", "name_de": "Rizokarpaso", "name_el": "Ριζοκάρπασο", "slug": "dipkarpaz", "region": "north"},
-        {"id": str(uuid.uuid4()), "name_tr": "Alsancak", "name_en": "Alsancak", "name_ru": "Алсанджак", "name_de": "Alsancak", "name_el": "Καραβάς", "slug": "alsancak", "region": "north"},
-        {"id": str(uuid.uuid4()), "name_tr": "Lapta", "name_en": "Lapithos", "name_ru": "Лапта", "name_de": "Lapithos", "name_el": "Λάπηθος", "slug": "lapta", "region": "north"},
-        {"id": str(uuid.uuid4()), "name_tr": "Çatalköy", "name_en": "Catalköy", "name_ru": "Чаталкёй", "name_de": "Catalköy", "name_el": "Άγιος Επίκτητος", "slug": "catalkoy", "region": "north"},
+    if settings and settings.get("custom_robots"):
+        return settings["custom_robots"]
+    
+    return """User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /partner/
+
+Sitemap: https://kktcx.com/sitemap.xml
+"""
+
+
+@app.get("/sitemap.xml", response_class=PlainTextResponse)
+async def sitemap_xml():
+    """Generate sitemap.xml"""
+    base_url = "https://kktcx.com"
+    
+    urls = [
+        {"loc": base_url, "priority": "1.0"},
+        {"loc": f"{base_url}/hakkimizda", "priority": "0.8"},
+        {"loc": f"{base_url}/iletisim", "priority": "0.7"},
+        {"loc": f"{base_url}/partnerler", "priority": "0.9"},
     ]
     
-    # South Cyprus (Greek Cyprus - Rum Kesimi)
-    south_cities = [
-        {"id": str(uuid.uuid4()), "name_tr": "Lefkoşa (Güney)", "name_en": "Nicosia", "name_ru": "Никосия", "name_de": "Nikosia", "name_el": "Λευκωσία", "slug": "lefkosa-guney", "region": "south"},
-        {"id": str(uuid.uuid4()), "name_tr": "Limasol", "name_en": "Limassol", "name_ru": "Лимасол", "name_de": "Limassol", "name_el": "Λεμεσός", "slug": "limasol", "region": "south"},
-        {"id": str(uuid.uuid4()), "name_tr": "Larnaka", "name_en": "Larnaca", "name_ru": "Ларнака", "name_de": "Larnaka", "name_el": "Λάρνακα", "slug": "larnaka", "region": "south"},
-        {"id": str(uuid.uuid4()), "name_tr": "Baf", "name_en": "Paphos", "name_ru": "Пафос", "name_de": "Paphos", "name_el": "Πάφος", "slug": "baf", "region": "south"},
-        {"id": str(uuid.uuid4()), "name_tr": "Ayia Napa", "name_en": "Ayia Napa", "name_ru": "Айя-Напа", "name_de": "Ayia Napa", "name_el": "Αγία Νάπα", "slug": "ayia-napa", "region": "south"},
-        {"id": str(uuid.uuid4()), "name_tr": "Protaras", "name_en": "Protaras", "name_ru": "Протарас", "name_de": "Protaras", "name_el": "Πρωταράς", "slug": "protaras", "region": "south"},
-        {"id": str(uuid.uuid4()), "name_tr": "Paralimni", "name_en": "Paralimni", "name_ru": "Паралимни", "name_de": "Paralimni", "name_el": "Παραλίμνι", "slug": "paralimni", "region": "south"},
-        {"id": str(uuid.uuid4()), "name_tr": "Polis", "name_en": "Polis Chrysochous", "name_ru": "Полис", "name_de": "Polis", "name_el": "Πόλις Χρυσοχούς", "slug": "polis", "region": "south"},
-    ]
+    # Add city pages
+    cities = await db.cities.find({}, {"_id": 0, "slug": 1}).to_list(100)
+    for city in cities:
+        urls.append({"loc": f"{base_url}/partnerler/{city['slug']}", "priority": "0.8"})
     
-    all_cities = north_cities + south_cities
-    await db.cities.insert_many(all_cities)
+    # Add approved partner profiles
+    profiles = await db.partner_profiles.find(
+        {"status": "approved"},
+        {"_id": 0, "slug": 1}
+    ).to_list(1000)
+    for profile in profiles:
+        urls.append({"loc": f"{base_url}/partner/{profile['slug']}", "priority": "0.6"})
     
-    # ==================== CATEGORIES (Service Types) ====================
-    categories = [
-        {"id": str(uuid.uuid4()), "name_tr": "Yemek Eşliği", "name_en": "Dinner Companion", "name_ru": "Компаньон за ужином", "name_de": "Essensbegleitung", "name_el": "Σύντροφος για δείπνο", "slug": "dinner-companion", "icon": "utensils", "type": "service"},
-        {"id": str(uuid.uuid4()), "name_tr": "Davet Eşliği", "name_en": "Event Companion", "name_ru": "Компаньон на мероприятие", "name_de": "Veranstaltungsbegleitung", "name_el": "Σύντροφος σε εκδήλωση", "slug": "event-companion", "icon": "calendar", "type": "service"},
-        {"id": str(uuid.uuid4()), "name_tr": "Uyku Arkadaşlığı", "name_en": "Sleep Companion", "name_ru": "Партнер для сна", "name_de": "Schlafbegleitung", "name_el": "Σύντροφος για ύπνο", "slug": "sleep-companion", "icon": "moon", "type": "service"},
-        {"id": str(uuid.uuid4()), "name_tr": "Sevgili Deneyimi", "name_en": "GF/BF Experience", "name_ru": "Опыт отношений", "name_de": "Freund/in Erlebnis", "name_el": "Εμπειρία σχέσης", "slug": "gf-bf-experience", "icon": "heart", "type": "service"},
-        {"id": str(uuid.uuid4()), "name_tr": "Eş Rolleri", "name_en": "Spouse Roleplay", "name_ru": "Роль супруга", "name_de": "Ehepartner Rollenspiel", "name_el": "Ρόλοι συζύγου", "slug": "spouse-roleplay", "icon": "users", "type": "service"},
-        {"id": str(uuid.uuid4()), "name_tr": "Gezi Eşliği", "name_en": "Travel Companion", "name_ru": "Компаньон в путешествии", "name_de": "Reisebegleitung", "name_el": "Σύντροφος ταξιδιού", "slug": "travel-companion", "icon": "plane", "type": "service"},
-        {"id": str(uuid.uuid4()), "name_tr": "Sosyal Etkinlik", "name_en": "Social Event", "name_ru": "Социальное мероприятие", "name_de": "Gesellschaftsveranstaltung", "name_el": "Κοινωνική εκδήλωση", "slug": "social-event", "icon": "users", "type": "service"},
-        {"id": str(uuid.uuid4()), "name_tr": "İş Daveti", "name_en": "Business Event", "name_ru": "Деловое мероприятие", "name_de": "Geschäftsveranstaltung", "name_el": "Επαγγελματική εκδήλωση", "slug": "business-event", "icon": "briefcase", "type": "service"},
-        {"id": str(uuid.uuid4()), "name_tr": "Kültür & Sanat", "name_en": "Culture & Arts", "name_ru": "Культура и искусство", "name_de": "Kultur & Kunst", "name_el": "Πολιτισμός & Τέχνη", "slug": "culture-arts", "icon": "palette", "type": "service"},
-        {"id": str(uuid.uuid4()), "name_tr": "Spor & Fitness", "name_en": "Sports & Fitness", "name_ru": "Спорт и фитнес", "name_de": "Sport & Fitness", "name_el": "Αθλητισμός & Γυμναστική", "slug": "sports-fitness", "icon": "dumbbell", "type": "service"},
-    ]
-    await db.categories.insert_many(categories)
+    xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml_content += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
     
-    # ==================== PACKAGES ====================
-    packages = [
-        {"id": str(uuid.uuid4()), "name_tr": "Standart", "name_en": "Standard", "name_ru": "Стандарт", "name_de": "Standard", "name_el": "Κανονικό", "package_type": "standard", "price": 0.0, "duration_days": 30, "priority_score": 0, "is_active": True, "features": {}},
-        {"id": str(uuid.uuid4()), "name_tr": "Öne Çıkan", "name_en": "Featured", "name_ru": "Рекомендуемый", "name_de": "Empfohlen", "name_el": "Προτεινόμενο", "package_type": "featured", "price": 29.99, "duration_days": 30, "priority_score": 50, "is_active": True, "features": {"badge": "featured"}},
-        {"id": str(uuid.uuid4()), "name_tr": "Şehir Vitrini", "name_en": "City Showcase", "name_ru": "Городская витрина", "name_de": "Stadt-Schaufenster", "name_el": "Βιτρίνα πόλης", "package_type": "city_vitrin", "price": 49.99, "duration_days": 30, "priority_score": 75, "is_active": True, "features": {"badge": "vitrin", "city_featured": True}},
-        {"id": str(uuid.uuid4()), "name_tr": "Ana Sayfa Vitrini", "name_en": "Homepage Showcase", "name_ru": "Главная витрина", "name_de": "Homepage-Schaufenster", "name_el": "Βιτρίνα αρχικής", "package_type": "homepage_vitrin", "price": 79.99, "duration_days": 30, "priority_score": 90, "is_active": True, "features": {"badge": "vitrin", "homepage_featured": True}},
-        {"id": str(uuid.uuid4()), "name_tr": "Premium", "name_en": "Premium", "name_ru": "Премиум", "name_de": "Premium", "name_el": "Πριμιουμ", "package_type": "premium", "price": 99.99, "duration_days": 30, "priority_score": 100, "is_active": True, "features": {"badge": "premium", "homepage_featured": True, "city_featured": True, "verified_badge": True}},
-    ]
-    await db.packages.insert_many(packages)
+    for url in urls:
+        xml_content += f'  <url>\n'
+        xml_content += f'    <loc>{url["loc"]}</loc>\n'
+        xml_content += f'    <priority>{url["priority"]}</priority>\n'
+        xml_content += f'  </url>\n'
     
-    # ==================== SETTINGS ====================
-    await db.settings.insert_many([
-        {"key": "netgsm", "value": {"enabled": False, "usercode": "", "password": "", "msgheader": ""}},
-        {"key": "stripe", "value": {"api_key": "", "test_mode": True}},
-        {"key": "site", "value": {"name": "KKTCX", "default_language": "tr", "languages": ["tr", "en", "ru", "de", "el"]}}
-    ])
+    xml_content += '</urlset>'
     
-    # ==================== ADMIN USER (only if not exists) ====================
-    existing_admin = await db.users.find_one({"email": "admin@kktcx.com"})
-    if not existing_admin:
-        admin_id = str(uuid.uuid4())
-        await db.users.insert_one({
-            "id": admin_id,
-            "email": "admin@kktcx.com",
-            "password": hash_password("admin123"),
-            "name": "Admin",
-            "role": "admin",
-            "language": "tr",
-            "is_active": True,
-            "is_verified": True,
-            "created_at": datetime.now(timezone.utc).isoformat()
-        })
-    
-    logger.info("Initial data seeded with all Cyprus cities and new service types")
+    return xml_content
 
-# ==================== WEBSOCKET ENDPOINTS ====================
 
-async def verify_ws_token(token: str) -> Optional[dict]:
-    """Verify JWT token for WebSocket connections"""
-    try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-        user = await db.users.find_one({"id": payload["user_id"]}, {"_id": 0, "password": 0})
-        return user
-    except:
-        return None
+# ==================== WEBSOCKET ====================
 
-@app.websocket("/ws/chat/{token}")
-async def websocket_chat(websocket: WebSocket, token: str):
-    """WebSocket endpoint for real-time chat"""
-    # Verify token
-    user = await verify_ws_token(token)
-    if not user:
-        await websocket.close(code=4001, reason="Invalid token")
-        return
+@app.websocket("/ws/{token}")
+async def websocket_route(websocket: WebSocket, token: str):
+    """WebSocket endpoint for real-time messaging"""
+    await websocket_endpoint(websocket, token)
+
+
+# ==================== SMS ENDPOINTS ====================
+
+@app.get("/api/admin/sms/settings")
+async def get_sms_settings_endpoint():
+    """Get SMS settings"""
+    from utils.auth import require_admin
+    settings = await db.settings.find_one({"key": "netgsm"}, {"_id": 0})
+    return settings.get("value", {}) if settings else {}
+
+
+@app.put("/api/admin/sms/settings")
+async def update_sms_settings_endpoint(
+    enabled: bool = False,
+    usercode: str = "",
+    password: str = "",
+    msgheader: str = ""
+):
+    """Update SMS settings"""
+    from datetime import datetime, timezone
+    settings = {
+        "enabled": enabled,
+        "usercode": usercode,
+        "password": password,
+        "msgheader": msgheader
+    }
+    await db.settings.update_one(
+        {"key": "netgsm"},
+        {"$set": {"value": settings, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True
+    )
+    return {"success": True}
+
+
+@app.get("/api/admin/sms/logs")
+async def get_sms_logs(page: int = 1, limit: int = 50):
+    """Get SMS logs"""
+    total = await db.sms_logs.count_documents({})
+    skip = (page - 1) * limit
+    logs = await db.sms_logs.find({}, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    return {"logs": logs, "total": total, "page": page, "pages": (total + limit - 1) // limit}
+
+
+# ==================== CONTENT API ====================
+
+@app.get("/api/content/{page}")
+async def get_page_content(page: str, lang: str = "tr"):
+    """Get content for a specific page"""
+    content = await db.content.find({"page": page, "lang": lang}, {"_id": 0}).to_list(100)
+    return {c["key"]: c["value"] for c in content}
+
+
+@app.get("/api/seo/{page}")
+async def get_page_seo(page: str, lang: str = "tr"):
+    """Get SEO data for a page"""
+    seo = await db.seo.find_one({"page": page}, {"_id": 0})
+    if seo:
+        return {
+            "title": seo.get(f"title_{lang}", seo.get("title_en", "")),
+            "description": seo.get(f"description_{lang}", seo.get("description_en", "")),
+            "keywords": seo.get(f"keywords_{lang}", seo.get("keywords_en", "")),
+            "og_image": seo.get("og_image", "")
+        }
+    return {}
+
+
+# ==================== STRIPE ENDPOINTS ====================
+
+@app.post("/api/stripe/create-checkout")
+async def create_stripe_checkout(
+    package_id: str,
+    success_url: str,
+    cancel_url: str,
+    authorization: str = Header(None)
+):
+    """Create Stripe checkout session"""
+    from utils.auth import get_current_user
+    from config import STRIPE_API_KEY
     
-    user_id = user["id"]
-    await ws_manager.connect(websocket, user_id)
+    user = await get_current_user(authorization)
     
-    try:
-        while True:
-            # Receive message from client
-            data = await websocket.receive_json()
-            
-            if data.get("type") == "ping":
-                # Respond to ping with pong
-                await websocket.send_json({"type": "pong"})
+    package = await db.packages.find_one({"id": package_id}, {"_id": 0})
+    if not package:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Package not found")
+    
+    if not STRIPE_API_KEY:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+    
+    import stripe
+    stripe.api_key = STRIPE_API_KEY
+    
+    session = stripe.checkout.Session.create(
+        payment_method_types=["card"],
+        line_items=[{
+            "price_data": {
+                "currency": "usd",
+                "product_data": {
+                    "name": package.get("name_en", "Package"),
+                    "description": str(package.get('duration_days', 30)) + " days"
+                },
+                "unit_amount": int(package["price"] * 100)
+            },
+            "quantity": 1
+        }],
+        mode="payment",
+        success_url=success_url,
+        cancel_url=cancel_url,
+        metadata={
+            "user_id": user["id"],
+            "package_id": package_id
+        }
+    )
+    
+    return {"session_id": session.id, "url": session.url}
+
+
+@app.post("/api/stripe/webhook")
+async def stripe_webhook(request):
+    """Handle Stripe webhook"""
+    from config import STRIPE_API_KEY
+    import stripe
+    from datetime import datetime, timezone, timedelta
+    
+    stripe.api_key = STRIPE_API_KEY
+    payload = await request.body()
+    
+    event = stripe.Event.construct_from(
+        stripe.util.convert_to_dict(stripe.util.json.loads(payload)),
+        stripe.api_key
+    )
+    
+    if event.type == "checkout.session.completed":
+        session = event.data.object
+        user_id = session.metadata.get("user_id")
+        package_id = session.metadata.get("package_id")
+        
+        if user_id and package_id:
+            package = await db.packages.find_one({"id": package_id}, {"_id": 0})
+            if package:
+                expires_at = datetime.now(timezone.utc) + timedelta(days=package["duration_days"])
                 
-            elif data.get("type") == "typing":
-                # Broadcast typing indicator
-                receiver_id = data.get("receiver_id")
-                if receiver_id:
-                    await ws_manager.send_personal_message({
-                        "type": "typing",
-                        "sender_id": user_id,
-                        "conversation_id": data.get("conversation_id")
-                    }, receiver_id)
-                    
-            elif data.get("type") == "read":
-                # Mark messages as read
-                message_ids = data.get("message_ids", [])
-                if message_ids:
-                    await db.messages.update_many(
-                        {"id": {"$in": message_ids}, "receiver_id": user_id},
-                        {"$set": {"status": "read"}}
-                    )
-                    # Notify sender that messages were read
-                    sender_id = data.get("sender_id")
-                    if sender_id:
-                        await ws_manager.send_personal_message({
-                            "type": "messages_read",
-                            "message_ids": message_ids,
-                            "reader_id": user_id
-                        }, sender_id)
-                        
-            elif data.get("type") == "message":
-                # Handle direct message via WebSocket
-                receiver_id = data.get("receiver_id")
-                content = data.get("content", "").strip()
-                
-                if receiver_id and content:
-                    # Find or create conversation
-                    conversation = await db.conversations.find_one({
-                        "$or": [
-                            {"participants": [user_id, receiver_id]},
-                            {"participants": [receiver_id, user_id]}
-                        ]
-                    }, {"_id": 0})
-                    
-                    if not conversation:
-                        conversation = {
-                            "id": str(uuid.uuid4()),
-                            "participants": [user_id, receiver_id],
-                            "last_message": None,
-                            "last_message_at": None,
-                            "created_at": datetime.now(timezone.utc).isoformat()
-                        }
-                        await db.conversations.insert_one(conversation)
-                    
-                    # Create message
-                    message = {
-                        "id": str(uuid.uuid4()),
-                        "conversation_id": conversation["id"],
-                        "sender_id": user_id,
-                        "receiver_id": receiver_id,
-                        "content": content,
-                        "status": "sent",
-                        "created_at": datetime.now(timezone.utc).isoformat()
-                    }
-                    await db.messages.insert_one(message)
-                    
-                    # Update conversation
-                    await db.conversations.update_one(
-                        {"id": conversation["id"]},
-                        {"$set": {
-                            "last_message": content[:100],
-                            "last_message_at": message["created_at"]
-                        }}
-                    )
-                    
-                    # Send confirmation to sender
-                    await websocket.send_json({
-                        "type": "message_sent",
-                        "message": {k: v for k, v in message.items() if k != "_id"}
-                    })
-                    
-                    # Send message to receiver
-                    await ws_manager.send_personal_message({
-                        "type": "new_message",
-                        "message": {k: v for k, v in message.items() if k != "_id"},
-                        "sender": {
-                            "id": user_id,
-                            "name": user.get("name", user.get("email", "").split("@")[0])
-                        }
-                    }, receiver_id)
-                    
-    except WebSocketDisconnect:
-        ws_manager.disconnect(websocket, user_id)
-    except Exception as e:
-        logger.error(f"WebSocket error for user {user_id}: {e}")
-        ws_manager.disconnect(websocket, user_id)
+                await db.partner_profiles.update_one(
+                    {"user_id": user_id},
+                    {"$set": {
+                        "package_type": package["package_type"],
+                        "package_expires_at": expires_at.isoformat(),
+                        "priority_score": package.get("priority_score", 0)
+                    }}
+                )
+    
+    return {"received": True}
 
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    client.close()
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8001)

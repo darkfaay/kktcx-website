@@ -1,23 +1,12 @@
-"""Services package"""
-from services.sms import (
-    sms_service, 
-    send_notification_sms, 
-    send_new_message_notification,
-    send_verification_code,
-    send_profile_approved_notification,
-    send_profile_rejected_notification
-)
-from services.storage import storage_service, init_storage, put_object, get_object
+"""
+Services package
+"""
+from services.sms import send_sms_notification, get_sms_settings
+from services.storage import init_storage, put_object, get_object
+from services.websocket import ConnectionManager, ws_manager
 
 __all__ = [
-    'sms_service',
-    'send_notification_sms',
-    'send_new_message_notification',
-    'send_verification_code',
-    'send_profile_approved_notification',
-    'send_profile_rejected_notification',
-    'storage_service',
-    'init_storage',
-    'put_object',
-    'get_object'
+    'send_sms_notification', 'get_sms_settings',
+    'init_storage', 'put_object', 'get_object',
+    'ConnectionManager', 'ws_manager'
 ]

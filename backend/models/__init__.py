@@ -1,10 +1,20 @@
-"""Models package"""
-from models.user import UserRole, UserBase, UserCreate, UserLogin, UserResponse, TokenResponse
-from models.partner import PartnerProfileCreate, PartnerProfileUpdate
-from models.settings import MessageCreate, CityCreate, CategoryCreate, PackageCreate, SettingUpdate
+"""
+Models package
+"""
+from models.schemas import (
+    UserRole, UserBase, UserCreate, UserLogin, UserResponse, TokenResponse,
+    PartnerProfileCreate, PartnerProfileUpdate,
+    MessageCreate,
+    CityCreate, CategoryCreate, PackageCreate,
+    SettingUpdate,
+    AvailabilitySettings, DurationOption, AppointmentCreate
+)
 
 __all__ = [
     'UserRole', 'UserBase', 'UserCreate', 'UserLogin', 'UserResponse', 'TokenResponse',
     'PartnerProfileCreate', 'PartnerProfileUpdate',
-    'MessageCreate', 'CityCreate', 'CategoryCreate', 'PackageCreate', 'SettingUpdate'
+    'MessageCreate',
+    'CityCreate', 'CategoryCreate', 'PackageCreate',
+    'SettingUpdate',
+    'AvailabilitySettings', 'DurationOption', 'AppointmentCreate'
 ]
