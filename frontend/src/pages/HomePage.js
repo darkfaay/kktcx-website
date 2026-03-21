@@ -458,7 +458,8 @@ const HomePage = () => {
             {[
               { label: 'Tümü', value: '', icon: '✨' },
               { label: 'Kadın', value: 'female', icon: '👩' },
-              { label: 'Erkek', value: 'male', icon: '👨' }
+              { label: 'Erkek', value: 'male', icon: '👨' },
+              { label: 'Trans', value: 'trans', icon: '🌈' }
             ].map((tab) => (
               <button
                 key={tab.value}
@@ -744,29 +745,29 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Orientations - Colorful Pills */}
+      {/* Service Target - Who they serve */}
       <section className="py-16 relative overflow-hidden">
         <div className="container mx-auto px-4">
           <div className="text-center mb-10">
-            <span className="text-[#CE93D8] text-sm uppercase tracking-wider">Çeşitlilik</span>
+            <span className="text-[#CE93D8] text-sm uppercase tracking-wider">Hedef Kitle</span>
             <h2 className="text-3xl md:text-4xl font-bold text-white mt-2 font-serif">
-              Cinsel Yönelim
+              Kime Hizmet Veriyor?
             </h2>
           </div>
           
           <div className="flex flex-wrap justify-center gap-4">
             {[
-              { name: 'Heteroseksüel', slug: 'heterosexual', color: 'from-rose-500 to-orange-500' },
-              { name: 'Lezbiyen', slug: 'lesbian', color: 'from-pink-500 to-red-500' },
-              { name: 'Gay', slug: 'gay', color: 'from-blue-500 to-cyan-500' },
-              { name: 'Biseksüel', slug: 'bisexual', color: 'from-purple-500 to-pink-500' },
-            ].map((orientation) => (
+              { name: 'Erkeklere', slug: 'men', color: 'from-blue-500 to-cyan-500', icon: '👨' },
+              { name: 'Kadınlara', slug: 'women', color: 'from-pink-500 to-rose-500', icon: '👩' },
+              { name: 'Herkese', slug: 'everyone', color: 'from-purple-500 to-pink-500', icon: '✨' },
+            ].map((target) => (
               <Link
-                key={orientation.slug}
-                to={`/${lang}/partnerler?orientation=${orientation.slug}`}
-                className={`px-8 py-4 rounded-full bg-gradient-to-r ${orientation.color} text-white font-semibold hover:scale-105 hover:shadow-lg hover:shadow-[#E91E63]/30 transition-all duration-300`}
+                key={target.slug}
+                to={`/${lang}/partnerler?serves=${target.slug}`}
+                className={`px-8 py-4 rounded-full bg-gradient-to-r ${target.color} text-white font-semibold hover:scale-105 hover:shadow-lg hover:shadow-[#E91E63]/30 transition-all duration-300 flex items-center gap-2`}
               >
-                {orientation.name}
+                <span className="text-xl">{target.icon}</span>
+                {target.name}
               </Link>
             ))}
           </div>

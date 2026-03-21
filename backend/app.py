@@ -123,6 +123,7 @@ class PartnerProfileCreate(BaseModel):
     outcall: bool = False
     whatsapp: Optional[str] = None
     telegram: Optional[str] = None
+    serves: str = "everyone"  # men, women, everyone
 
 class PartnerProfileUpdate(BaseModel):
     nickname: Optional[str] = None
@@ -150,6 +151,7 @@ class PartnerProfileUpdate(BaseModel):
     outcall: Optional[bool] = None
     whatsapp: Optional[str] = None
     telegram: Optional[str] = None
+    serves: Optional[str] = None  # men, women, everyone
 
 class AvailabilitySettings(BaseModel):
     working_hours_start: str = "09:00"
@@ -613,7 +615,7 @@ async def get_homepage_data(lang: str = "tr"):
 async def get_partners(
     city: Optional[str] = None,
     category: Optional[str] = None,
-    orientation: Optional[str] = None,
+    serves: Optional[str] = None,
     gender: Optional[str] = None,
     service_type: Optional[str] = None,
     min_age: int = 18,
@@ -643,8 +645,12 @@ async def get_partners(
     
     if category:
         query["category_ids"] = {"$in": [category]}
-    if orientation:
-        query["orientations"] = {"$in": [orientation]}
+    if serves:
+        # Filter by who the partner serves: men, women, everyone
+        if serves == "everyone":
+            query["serves"] = {"$in": ["everyone", "all"]}
+        else:
+            query["$or"] = [{"serves": serves}, {"serves": "everyone"}, {"serves": "all"}]
     if gender:
         query["gender"] = gender
     if service_type:
@@ -783,6 +789,7 @@ async def create_partner_profile(data: PartnerProfileCreate, user: dict = Depend
         "outcall": data.outcall,
         "whatsapp": data.whatsapp,
         "telegram": data.telegram,
+        "serves": data.serves,
         "slug": slug,
         "status": "pending",
         "is_verified": False,

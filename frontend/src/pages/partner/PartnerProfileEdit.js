@@ -25,24 +25,22 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 // Service type options with icons
 const serviceTypeOptions = [
+  { value: 'massage', label: 'Masaj', icon: '💆' },
+  { value: 'companion', label: 'Eşlik', icon: '👫' },
+  { value: 'vip', label: 'VIP', icon: '⭐' },
   { value: 'dinner-companion', label: 'Yemek Eşliği', icon: '🍽️' },
-  { value: 'event-companion', label: 'Davet Eşliği', icon: '🎉' },
-  { value: 'sleep-companion', label: 'Uyku Arkadaşlığı', icon: '🌙' },
-  { value: 'gf-bf-experience', label: 'Sevgili Deneyimi', icon: '💑' },
-  { value: 'spouse-roleplay', label: 'Eş Rolleri', icon: '💍' },
+  { value: 'event-companion', label: 'Davet Eşliği', icon: '🎭' },
   { value: 'travel-companion', label: 'Gezi Eşliği', icon: '✈️' },
-  { value: 'social-event', label: 'Sosyal Etkinlik', icon: '🎭' },
-  { value: 'business-event', label: 'İş Daveti', icon: '💼' },
-  { value: 'culture-arts', label: 'Kültür & Sanat', icon: '🎨' },
-  { value: 'sports-fitness', label: 'Spor & Fitness', icon: '🏋️' },
+  { value: 'gf-bf-experience', label: 'Sevgili Deneyimi', icon: '💕' },
+  { value: 'couple-roleplay', label: 'Karı Koca Rolü', icon: '💑' },
+  { value: 'sleep-companion', label: 'Uyku Arkadaşlığı', icon: '🌙' },
 ];
 
-const orientationOptions = [
-  { value: 'heterosexual', label: 'Heteroseksüel' },
-  { value: 'lesbian', label: 'Lezbiyen' },
-  { value: 'gay', label: 'Gay' },
-  { value: 'bisexual', label: 'Biseksüel' },
-  { value: 'trans', label: 'Trans' },
+// Who they serve options
+const servesOptions = [
+  { value: 'men', label: 'Erkeklere', icon: '👨' },
+  { value: 'women', label: 'Kadınlara', icon: '👩' },
+  { value: 'everyone', label: 'Herkese', icon: '✨' },
 ];
 
 const genderOptions = [
@@ -137,7 +135,7 @@ const PartnerProfileEdit = () => {
     languages: [],
     category_ids: [],
     service_types: [],
-    orientations: [],
+    serves: 'everyone',
     body_type: '',
     height: '',
     hair_color: '',
@@ -187,7 +185,7 @@ const PartnerProfileEdit = () => {
           languages: profileRes.data.languages || [],
           category_ids: profileRes.data.category_ids || [],
           service_types: profileRes.data.service_types || [],
-          orientations: profileRes.data.orientations || [],
+          serves: profileRes.data.serves || 'everyone',
           body_type: profileRes.data.body_type || '',
           height: profileRes.data.height || '',
           hair_color: profileRes.data.hair_color || '',
@@ -703,24 +701,28 @@ const PartnerProfileEdit = () => {
                 <div className="w-10 h-10 rounded-xl bg-pink-500/20 flex items-center justify-center">
                   <Heart className="w-5 h-5 text-pink-400" />
                 </div>
-                Cinsel Yönelim
+                Kime Hizmet Veriyorsunuz?
               </h3>
               
               <div className="flex flex-wrap gap-3">
-                {orientationOptions.map((opt) => (
+                {servesOptions.map((opt) => (
                   <button
                     key={opt.value}
-                    onClick={() => toggleArrayItem('orientations', opt.value)}
-                    className={`px-5 py-3 rounded-xl font-medium transition-all ${
-                      formData.orientations.includes(opt.value)
+                    onClick={() => handleChange('serves', opt.value)}
+                    className={`px-5 py-3 rounded-xl font-medium transition-all flex items-center gap-2 ${
+                      formData.serves === opt.value
                         ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/30'
                         : 'bg-white/5 text-white/60 hover:bg-white/10'
                     }`}
                   >
+                    <span className="text-xl">{opt.icon}</span>
                     {opt.label}
                   </button>
                 ))}
               </div>
+              <p className="text-white/40 text-sm mt-4">
+                Bu seçim, sizi arayan müşterilerin size ulaşmasını kolaylaştırır.
+              </p>
             </div>
 
             {/* Availability */}

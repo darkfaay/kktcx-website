@@ -202,6 +202,7 @@ const PartnersPage = () => {
     category_id: searchParams.get('category') || '',
     gender: searchParams.get('gender') || '',
     service_type: searchParams.get('service') || '',
+    serves: searchParams.get('serves') || '',
     min_age: parseInt(searchParams.get('min_age')) || 18,
     max_age: parseInt(searchParams.get('max_age')) || 60,
     available_today: searchParams.get('available_today') === 'true',
@@ -220,6 +221,7 @@ const PartnersPage = () => {
       category_id: searchParams.get('category') || '',
       gender: searchParams.get('gender') || '',
       service_type: searchParams.get('service') || '',
+      serves: searchParams.get('serves') || '',
       min_age: parseInt(searchParams.get('min_age')) || 18,
       max_age: parseInt(searchParams.get('max_age')) || 60,
       available_today: searchParams.get('available_today') === 'true',
@@ -277,6 +279,7 @@ const PartnersPage = () => {
       if (filters.category_id) params.append('category', filters.category_id);
       if (filters.gender) params.append('gender', filters.gender);
       if (filters.service_type) params.append('service_type', filters.service_type);
+      if (filters.serves) params.append('serves', filters.serves);
       if (filters.min_age > 18) params.append('min_age', filters.min_age);
       if (filters.max_age < 60) params.append('max_age', filters.max_age);
       if (filters.available_today) params.append('available_today', 'true');
@@ -309,6 +312,7 @@ const PartnersPage = () => {
       category_id: '',
       gender: '',
       service_type: '',
+      serves: '',
       min_age: 18,
       max_age: 60,
       available_today: false,
@@ -327,6 +331,7 @@ const PartnersPage = () => {
     filters.category_id,
     filters.gender,
     filters.service_type,
+    filters.serves,
     filters.min_age > 18,
     filters.max_age < 60,
     filters.available_today,
@@ -350,6 +355,7 @@ const PartnersPage = () => {
             <SelectItem value="all">{t('all')}</SelectItem>
             <SelectItem value="female">{t('female')}</SelectItem>
             <SelectItem value="male">{t('male')}</SelectItem>
+            <SelectItem value="trans">{t('trans')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -366,6 +372,22 @@ const PartnersPage = () => {
             {(categories || []).map((cat) => (
               <SelectItem key={cat.id || cat.slug} value={cat.slug}>{cat.name || cat.name_tr}</SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Serves - Who they serve */}
+      <div>
+        <label className="text-white/70 text-sm mb-2 block">Kime Hizmet Veriyor</label>
+        <Select value={filters.serves || "all"} onValueChange={(v) => updateFilter('serves', v === "all" ? "" : v)}>
+          <SelectTrigger className="input-glass">
+            <SelectValue placeholder={t('all')} />
+          </SelectTrigger>
+          <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
+            <SelectItem value="all">{t('all')}</SelectItem>
+            <SelectItem value="men">Erkeklere</SelectItem>
+            <SelectItem value="women">Kadınlara</SelectItem>
+            <SelectItem value="everyone">Herkese</SelectItem>
           </SelectContent>
         </Select>
       </div>
