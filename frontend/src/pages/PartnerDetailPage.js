@@ -529,7 +529,8 @@ const PartnerDetailPage = () => {
                 Mesaj Gönder
               </Button>
 
-              {profile.whatsapp && (
+              {/* WhatsApp - Only for logged-in users */}
+              {user && profile.whatsapp && (
                 <a 
                   href={`https://wa.me/${profile.whatsapp}`}
                   target="_blank"
@@ -542,7 +543,8 @@ const PartnerDetailPage = () => {
                 </a>
               )}
 
-              {profile.telegram && (
+              {/* Telegram - Only for logged-in users */}
+              {user && profile.telegram && (
                 <a 
                   href={`https://t.me/${profile.telegram}`}
                   target="_blank"
@@ -553,6 +555,18 @@ const PartnerDetailPage = () => {
                   <Send className="w-5 h-5" />
                   Telegram
                 </a>
+              )}
+
+              {/* Login prompt for guests */}
+              {!user && (profile.whatsapp || profile.telegram) && (
+                <div className="glass rounded-xl p-4 text-center">
+                  <p className="text-white/60 text-sm mb-3">İletişim bilgilerini görmek için giriş yapın</p>
+                  <Link to={`/${lang}/giris`}>
+                    <Button className="btn-primary w-full">
+                      Giriş Yap
+                    </Button>
+                  </Link>
+                </div>
               )}
 
               <Button
@@ -609,7 +623,8 @@ const PartnerDetailPage = () => {
             <MessageCircle className="w-5 h-5 mr-2" />
             Mesaj Gönder
           </Button>
-          {profile.whatsapp && (
+          {/* WhatsApp - Only for logged-in users */}
+          {user && profile.whatsapp && (
             <a 
               href={`https://wa.me/${profile.whatsapp}`}
               target="_blank"

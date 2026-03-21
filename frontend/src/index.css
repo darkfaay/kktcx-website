@@ -218,9 +218,19 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Input styles */
 .input-glass {
-  @apply text-white placeholder:text-white/40 rounded-xl h-12 px-4 transition-all duration-300;
+  @apply text-white placeholder:text-white/40 rounded-xl h-12 transition-all duration-300;
   background: rgba(20, 20, 30, 0.8);
   border: 1px solid rgba(233, 30, 99, 0.2);
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.input-glass.pl-12 {
+  padding-left: 3rem !important;
+}
+
+.input-glass.pr-12 {
+  padding-right: 3rem !important;
 }
 
 .input-glass:focus {
