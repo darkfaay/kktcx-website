@@ -458,8 +458,7 @@ const HomePage = () => {
             {[
               { label: 'Tümü', value: '', icon: '✨' },
               { label: 'Kadın', value: 'female', icon: '👩' },
-              { label: 'Erkek', value: 'male', icon: '👨' },
-              { label: 'Trans', value: 'trans', icon: '🌈' }
+              { label: 'Erkek', value: 'male', icon: '👨' }
             ].map((tab) => (
               <button
                 key={tab.value}
@@ -712,30 +711,35 @@ const HomePage = () => {
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {[
-              { name: 'Yemek Eşliği', slug: 'dinner-companion', icon: '🍷', color: 'from-rose-500 to-pink-600' },
-              { name: 'Davet Eşliği', slug: 'event-companion', icon: '🎭', color: 'from-purple-500 to-violet-600' },
-              { name: 'Sevgili Deneyimi', slug: 'gf-bf-experience', icon: '💕', color: 'from-pink-500 to-red-500' },
-              { name: 'Uyku Arkadaşlığı', slug: 'sleep-companion', icon: '🌙', color: 'from-indigo-500 to-blue-600' },
-              { name: 'Eş Rolleri', slug: 'spouse-roleplay', icon: '💍', color: 'from-amber-500 to-orange-600' },
-              { name: 'Gezi Eşliği', slug: 'travel-companion', icon: '✈️', color: 'from-cyan-500 to-teal-600' },
-              { name: 'Sosyal Etkinlik', slug: 'social-event', icon: '🎉', color: 'from-fuchsia-500 to-pink-600' },
-              { name: 'İş Daveti', slug: 'business-event', icon: '💼', color: 'from-slate-500 to-gray-600' },
-              { name: 'Kültür & Sanat', slug: 'culture-arts', icon: '🎨', color: 'from-emerald-500 to-green-600' },
-              { name: 'Spor & Fitness', slug: 'sports-fitness', icon: '💪', color: 'from-orange-500 to-red-600' },
-            ].map((service) => (
-              <Link
-                key={service.slug}
-                to={`/${lang}/partnerler?service=${service.slug}`}
-                className="sexy-card glass rounded-2xl p-5 text-center group"
-                data-testid={`service-${service.slug}`}
-              >
-                <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${service.color} flex items-center justify-center text-3xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
-                  {service.icon}
-                </div>
-                <h3 className="text-white font-medium">{service.name}</h3>
-              </Link>
-            ))}
+            {(homeData?.categories || []).map((category) => {
+              const categoryColors = {
+                'massage': 'from-purple-500 to-violet-600',
+                'companion': 'from-pink-500 to-rose-600',
+                'vip': 'from-amber-500 to-yellow-500',
+                'dinner-companion': 'from-rose-500 to-pink-600',
+                'event-companion': 'from-purple-500 to-violet-600',
+                'travel-companion': 'from-cyan-500 to-teal-600',
+                'gf-bf-experience': 'from-pink-500 to-red-500',
+                'couple-roleplay': 'from-amber-500 to-orange-600',
+                'sleep-companion': 'from-indigo-500 to-blue-600',
+              };
+              const color = categoryColors[category.slug] || 'from-pink-500 to-rose-600';
+              const icon = category.icon || '💕';
+              
+              return (
+                <Link
+                  key={category.id || category.slug}
+                  to={`/${lang}/partnerler?category=${category.slug}`}
+                  className="sexy-card glass rounded-2xl p-5 text-center group"
+                  data-testid={`service-${category.slug}`}
+                >
+                  <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${color} flex items-center justify-center text-3xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
+                    {icon}
+                  </div>
+                  <h3 className="text-white font-medium">{category.name || category.name_tr}</h3>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -756,7 +760,6 @@ const HomePage = () => {
               { name: 'Lezbiyen', slug: 'lesbian', color: 'from-pink-500 to-red-500' },
               { name: 'Gay', slug: 'gay', color: 'from-blue-500 to-cyan-500' },
               { name: 'Biseksüel', slug: 'bisexual', color: 'from-purple-500 to-pink-500' },
-              { name: 'Trans', slug: 'trans', color: 'from-pink-400 to-blue-400' },
             ].map((orientation) => (
               <Link
                 key={orientation.slug}

@@ -350,12 +350,11 @@ const PartnersPage = () => {
             <SelectItem value="all">{t('all')}</SelectItem>
             <SelectItem value="female">{t('female')}</SelectItem>
             <SelectItem value="male">{t('male')}</SelectItem>
-            <SelectItem value="trans">{t('trans')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* Service Type */}
+      {/* Service Type - Dynamic from categories */}
       <div>
         <label className="text-white/70 text-sm mb-2 block">{t('serviceType')}</label>
         <Select value={filters.service_type || "all"} onValueChange={(v) => updateFilter('service_type', v === "all" ? "" : v)}>
@@ -364,8 +363,8 @@ const PartnersPage = () => {
           </SelectTrigger>
           <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
             <SelectItem value="all">{t('all')}</SelectItem>
-            {Object.entries(serviceTypeKeys).map(([value, key]) => (
-              <SelectItem key={value} value={value}>{t(key)}</SelectItem>
+            {(categories || []).map((cat) => (
+              <SelectItem key={cat.id || cat.slug} value={cat.slug}>{cat.name || cat.name_tr}</SelectItem>
             ))}
           </SelectContent>
         </Select>
