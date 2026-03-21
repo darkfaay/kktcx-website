@@ -13,6 +13,75 @@ from utils.auth import get_current_user, require_partner
 router = APIRouter(tags=["Appointments"])
 
 
+# ==================== PUBLIC AVAILABILITY ====================
+
+@router.get("/availability/{profile_id}")
+async def get_public_availability(
+    profile_id: str,
+    month: str = Query(None, description="Month in YYYY-MM format")
+):
+    """Get partner's public availability for booking"""
+    profile = await db.partner_profiles.find_one({"id": profile_id}, {"_id": 0})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    
+    if profile.get("status") != "approved":
+        raise HTTPException(status_code=404, detail="Profile not available")
+    
+    settings = profile.get("availability_settings", {
+        "working_hours_start": "09:00",
+        "working_hours_end": "22:00",
+        "slot_duration": 60,
+        "break_between_slots": 30,
+        "working_days": [1, 2, 3, 4, 5, 6, 7],
+        "blocked_dates": [],
+        "auto_confirm": False
+    })
+    
+    durations = profile.get("duration_options", [
+        {"id": "30min", "label": "30 Dakika", "minutes": 30, "price": 100, "is_active": True},
+        {"id": "1hour", "label": "1 Saat", "minutes": 60, "price": 150, "is_active": True},
+        {"id": "2hour", "label": "2 Saat", "minutes": 120, "price": 250, "is_active": True}
+    ])
+    
+    # Filter only active durations
+    active_durations = [d for d in durations if d.get("is_active", True)]
+    
+    # Get existing appointments to determine available slots
+    blocked_slots = []
+    if month:
+        try:
+            year, mon = month.split("-")
+            start_date = datetime(int(year), int(mon), 1)
+            if int(mon) == 12:
+                end_date = datetime(int(year) + 1, 1, 1)
+            else:
+                end_date = datetime(int(year), int(mon) + 1, 1)
+            
+            appointments = await db.appointments.find({
+                "partner_id": profile_id,
+                "status": {"$in": ["pending", "confirmed"]},
+                "date": {"$gte": start_date.isoformat(), "$lt": end_date.isoformat()}
+            }, {"_id": 0, "date": 1, "time": 1, "duration_minutes": 1}).to_list(100)
+            
+            blocked_slots = [{"date": a["date"][:10], "time": a["time"]} for a in appointments]
+        except:
+            pass
+    
+    return {
+        "settings": {
+            "working_hours_start": settings.get("working_hours_start", "09:00"),
+            "working_hours_end": settings.get("working_hours_end", "22:00"),
+            "working_days": settings.get("working_days", [1, 2, 3, 4, 5, 6, 7]),
+            "blocked_dates": settings.get("blocked_dates", []),
+            "slot_duration": settings.get("slot_duration", 60),
+            "break_between_slots": settings.get("break_between_slots", 30)
+        },
+        "durations": active_durations,
+        "blocked_slots": blocked_slots
+    }
+
+
 # ==================== PARTNER AVAILABILITY ====================
 
 @router.get("/partner/availability")
