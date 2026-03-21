@@ -124,15 +124,33 @@ async def get_homepage_data(lang: str = "tr"):
         {"_id": 0}
     ).sort("created_at", -1).limit(12).to_list(12)
     
+    # City ID mapping for mismatches between profile city_id and city slugs
+    city_id_mapping = {
+        "gazimagusa": ["magusa", "famagusta", "gazimagusa"],
+        "lefkosa-kuzey": ["lefkosa", "nicosia", "lefkosa-kuzey"],
+        "girne": ["girne", "kyrenia"],
+        "guzelyurt": ["guzelyurt", "morphou"],
+        "iskele": ["iskele", "trikomo"],
+        "lefke": ["lefke", "lefka"],
+    }
+    
     # Get cities
     cities = await db.cities.find({}, {"_id": 0}).to_list(100)
     for city in cities:
         city["name"] = city.get(f"name_{lang}", city.get("name_en", ""))
-        # Count profiles per city
+        city_slug = city.get("slug", "")
+        
+        # Get all possible city_id values for this city
+        possible_ids = [city.get("id"), city_slug]
+        if city_slug in city_id_mapping:
+            possible_ids.extend(city_id_mapping[city_slug])
+        
+        # Count profiles matching any of the possible IDs
         city["profile_count"] = await db.partner_profiles.count_documents({
-            "status": "approved", 
-            "$or": [{"city_id": city.get("id")}, {"city_id": city.get("slug")}]
+            "status": "approved",
+            "city_id": {"$in": possible_ids}
         })
+        city["partner_count"] = city["profile_count"]  # Frontend uses partner_count
     
     # Get categories
     categories = await db.categories.find({}, {"_id": 0}).to_list(100)
