@@ -24,7 +24,9 @@ async def get_dashboard(admin: dict = Depends(require_admin)):
     total_profiles = await db.partner_profiles.count_documents({})
     pending_profiles = await db.partner_profiles.count_documents({"status": "pending"})
     approved_profiles = await db.partner_profiles.count_documents({"status": "approved"})
+    vitrin_profiles = await db.partner_profiles.count_documents({"is_homepage_vitrin": True})
     total_appointments = await db.appointments.count_documents({})
+    total_messages = await db.messages.count_documents({})
     
     pipeline = [{"$group": {"_id": None, "total": {"$sum": "$view_count"}}}]
     views_result = await db.partner_profiles.aggregate(pipeline).to_list(1)
@@ -37,10 +39,13 @@ async def get_dashboard(admin: dict = Depends(require_admin)):
     return {
         "total_users": total_users,
         "total_partners": total_partners,
+        "active_partners": approved_profiles,
         "total_profiles": total_profiles,
         "pending_profiles": pending_profiles,
         "approved_profiles": approved_profiles,
+        "vitrin_profiles": vitrin_profiles,
         "total_views": total_views,
+        "total_messages": total_messages,
         "total_appointments": total_appointments,
         "recent_profiles": recent_profiles
     }
