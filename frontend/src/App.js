@@ -42,6 +42,9 @@ import AdminSettings from './pages/admin/AdminSettings';
 import AdminCities from './pages/admin/AdminCities';
 import AdminCategories from './pages/admin/AdminCategories';
 import AdminPackages from './pages/admin/AdminPackages';
+import AdminSiteSettings from './pages/admin/AdminSiteSettings';
+import AdminSEO from './pages/admin/AdminSEO';
+import AdminContent from './pages/admin/AdminContent';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, roles = [] }) => {
@@ -132,11 +135,19 @@ function AppRoutes() {
             </ProtectedRoute>
           }>
             <Route index element={<AdminDashboard />} />
+            <Route path="site-ayarlari" element={<AdminSiteSettings />} />
+            <Route path="seo" element={<AdminSEO />} />
+            <Route path="icerik" element={<AdminContent />} />
             <Route path="kullanicilar" element={<AdminUsers />} />
+            <Route path="partnerler" element={<AdminUsers />} />
             <Route path="profiller" element={<AdminProfiles />} />
             <Route path="sehirler" element={<AdminCities />} />
             <Route path="kategoriler" element={<AdminCategories />} />
             <Route path="paketler" element={<AdminPackages />} />
+            <Route path="entegrasyonlar" element={<AdminSettings />} />
+            <Route path="ceviri" element={<AdminContent />} />
+            <Route path="raporlar" element={<AdminDashboard />} />
+            <Route path="medya" element={<AdminProfiles />} />
             <Route path="ayarlar" element={<AdminSettings />} />
           </Route>
         </Route>

@@ -1409,18 +1409,97 @@ async def get_seo(page_slug: str, lang: str = "tr"):
         "og_image": seo.get("og_image", "")
     }
 
-@api_router.put("/admin/seo/{page_slug}")
-async def update_seo(
-    page_slug: str,
-    data: Dict[str, str],
+@api_router.get("/admin/seo")
+async def admin_get_seo(admin: dict = Depends(require_admin)):
+    """Get all SEO settings"""
+    global_seo = await db.settings.find_one({"key": "seo_global"}, {"_id": 0})
+    pages_seo = await db.seo_pages.find({}, {"_id": 0}).to_list(100)
+    robots_seo = await db.settings.find_one({"key": "seo_robots"}, {"_id": 0})
+    
+    return {
+        "global": global_seo.get("value", {}) if global_seo else {},
+        "pages": pages_seo or [],
+        "robots": robots_seo.get("value", {}) if robots_seo else {}
+    }
+
+@api_router.put("/admin/seo/{section}")
+async def admin_update_seo(
+    section: str,
+    data: Dict[str, Any],
     admin: dict = Depends(require_admin)
 ):
-    await db.seo_pages.update_one(
-        {"slug": page_slug},
-        {"$set": {**data, "slug": page_slug, "updated_at": datetime.now(timezone.utc).isoformat()}},
-        upsert=True
-    )
+    """Update SEO settings by section (global, pages, robots)"""
+    if section == "global":
+        await db.settings.update_one(
+            {"key": "seo_global"},
+            {"$set": {"key": "seo_global", "value": data, "updated_at": datetime.now(timezone.utc).isoformat()}},
+            upsert=True
+        )
+    elif section == "pages":
+        # Update each page's SEO
+        for page in data:
+            await db.seo_pages.update_one(
+                {"slug": page.get("slug")},
+                {"$set": {**page, "updated_at": datetime.now(timezone.utc).isoformat()}},
+                upsert=True
+            )
+    elif section == "robots":
+        await db.settings.update_one(
+            {"key": "seo_robots"},
+            {"$set": {"key": "seo_robots", "value": data, "updated_at": datetime.now(timezone.utc).isoformat()}},
+            upsert=True
+        )
     return {"success": True}
+
+# ==================== CONTENT MANAGEMENT ====================
+
+@api_router.get("/admin/content")
+async def admin_get_content(admin: dict = Depends(require_admin)):
+    """Get all page content"""
+    contents = await db.page_content.find({}, {"_id": 0}).to_list(100)
+    result = {}
+    for content in contents:
+        page = content.get("page")
+        lang = content.get("lang")
+        if page not in result:
+            result[page] = {}
+        result[page][lang] = content.get("data", {})
+    return result
+
+@api_router.put("/admin/content/{page}")
+async def admin_update_content(
+    page: str,
+    data: Dict[str, Any],
+    admin: dict = Depends(require_admin)
+):
+    """Update page content for all languages"""
+    for lang, content in data.items():
+        await db.page_content.update_one(
+            {"page": page, "lang": lang},
+            {"$set": {
+                "page": page,
+                "lang": lang,
+                "data": content,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }},
+            upsert=True
+        )
+    return {"success": True}
+
+@api_router.get("/content/{page}")
+async def get_page_content(page: str, lang: str = "tr"):
+    """Get content for a specific page and language"""
+    content = await db.page_content.find_one(
+        {"page": page, "lang": lang}, 
+        {"_id": 0}
+    )
+    if not content:
+        # Fallback to English
+        content = await db.page_content.find_one(
+            {"page": page, "lang": "en"}, 
+            {"_id": 0}
+        )
+    return content.get("data", {}) if content else {}
 
 # ==================== VITRIN / HOMEPAGE DATA ====================
 
