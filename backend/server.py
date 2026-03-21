@@ -846,11 +846,14 @@ async def list_partners(
     
     # Enrich with city/district names
     city_ids = list(set(p.get("city_id") for p in profiles if p.get("city_id")))
-    cities = {c["id"]: c for c in await db.cities.find({"id": {"$in": city_ids}}, {"_id": 0}).to_list(100)}
+    # Try to match by both id and slug
+    cities_by_id = {c["id"]: c for c in await db.cities.find({"id": {"$in": city_ids}}, {"_id": 0}).to_list(100)}
+    cities_by_slug = {c["slug"]: c for c in await db.cities.find({"slug": {"$in": city_ids}}, {"_id": 0}).to_list(100)}
     
     for profile in profiles:
-        city = cities.get(profile.get("city_id"), {})
-        profile["city_name"] = city.get(f"name_{lang}", city.get("name_en", ""))
+        city_id = profile.get("city_id", "")
+        city = cities_by_id.get(city_id) or cities_by_slug.get(city_id) or {}
+        profile["city_name"] = city.get(f"name_{lang}", city.get("name_tr", city.get("name_en", city_id.replace("-", " ").title())))
     
     return {
         "profiles": profiles,
@@ -869,10 +872,13 @@ async def get_partner_profile(slug: str, lang: str = "tr", user: dict = Depends(
     # Increment view count
     await db.partner_profiles.update_one({"slug": slug}, {"$inc": {"view_count": 1}})
     
-    # Get city and district
-    city = await db.cities.find_one({"id": profile.get("city_id")}, {"_id": 0})
+    # Get city and district (match by both id and slug)
+    city_id = profile.get("city_id", "")
+    city = await db.cities.find_one({"$or": [{"id": city_id}, {"slug": city_id}]}, {"_id": 0})
     if city:
-        profile["city_name"] = city.get(f"name_{lang}", city.get("name_en", ""))
+        profile["city_name"] = city.get(f"name_{lang}", city.get("name_tr", city.get("name_en", city_id)))
+    else:
+        profile["city_name"] = city_id.replace("-", " ").title() if city_id else ""
     
     district = await db.districts.find_one({"id": profile.get("district_id")}, {"_id": 0})
     if district:

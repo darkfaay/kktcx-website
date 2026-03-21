@@ -19,16 +19,28 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 // New legal service types
 const serviceTypeLabels = {
+  'dinner_companion': 'Yemek Eşliği',
   'dinner-companion': 'Yemek Eşliği',
+  'event_companion': 'Etkinlik Eşliği',
   'event-companion': 'Davet Eşliği',
+  'sleep_companion': 'Uyku Arkadaşlığı',
   'sleep-companion': 'Uyku Arkadaşlığı',
+  'gf_bf_experience': 'Sevgili Deneyimi',
   'gf-bf-experience': 'Sevgili Deneyimi',
+  'spouse_roleplay': 'Eş Rolleri',
   'spouse-roleplay': 'Eş Rolleri',
+  'travel_companion': 'Seyahat Eşliği',
   'travel-companion': 'Gezi Eşliği',
+  'social_event': 'Sosyal Etkinlik',
   'social-event': 'Sosyal Etkinlik',
+  'business_event': 'İş Daveti',
   'business-event': 'İş Daveti',
+  'culture_arts': 'Kültür & Sanat',
   'culture-arts': 'Kültür & Sanat',
-  'sports-fitness': 'Spor & Fitness'
+  'sports_fitness': 'Spor & Fitness',
+  'sports-fitness': 'Spor & Fitness',
+  'escort': 'Escort',
+  'companion': 'Eşlik'
 };
 
 const genderLabels = {

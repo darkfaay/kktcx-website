@@ -15,16 +15,28 @@ import { toast } from 'sonner';
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const serviceTypeLabels = {
+  'dinner_companion': { label: 'Yemek Eşliği', icon: Utensils },
   'dinner-companion': { label: 'Yemek Eşliği', icon: Utensils },
+  'event_companion': { label: 'Etkinlik Eşliği', icon: Users },
   'event-companion': { label: 'Davet Eşliği', icon: Users },
+  'sleep_companion': { label: 'Uyku Arkadaşlığı', icon: Star },
   'sleep-companion': { label: 'Uyku Arkadaşlığı', icon: Star },
+  'gf_bf_experience': { label: 'Sevgili Deneyimi', icon: Heart },
   'gf-bf-experience': { label: 'Sevgili Deneyimi', icon: Heart },
+  'spouse_roleplay': { label: 'Eş Rolleri', icon: Users },
   'spouse-roleplay': { label: 'Eş Rolleri', icon: Users },
+  'travel_companion': { label: 'Seyahat Eşliği', icon: Plane },
   'travel-companion': { label: 'Gezi Eşliği', icon: Plane },
+  'social_event': { label: 'Sosyal Etkinlik', icon: Sparkles },
   'social-event': { label: 'Sosyal Etkinlik', icon: Sparkles },
+  'business_event': { label: 'İş Daveti', icon: Briefcase },
   'business-event': { label: 'İş Daveti', icon: Briefcase },
+  'culture_arts': { label: 'Kültür & Sanat', icon: Palette },
   'culture-arts': { label: 'Kültür & Sanat', icon: Palette },
-  'sports-fitness': { label: 'Spor & Fitness', icon: Zap }
+  'sports_fitness': { label: 'Spor & Fitness', icon: Zap },
+  'sports-fitness': { label: 'Spor & Fitness', icon: Zap },
+  'escort': { label: 'Escort', icon: Star },
+  'companion': { label: 'Eşlik', icon: Users }
 };
 
 const orientationLabels = {
