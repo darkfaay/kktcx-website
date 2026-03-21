@@ -282,9 +282,9 @@ const PartnerDetailPage = () => {
     ? profile.gallery.map(url => ({ url, isBlurred: false }))
     : profile.images?.length > 0 
       ? profile.images.map(img => ({
-          url: `${API_URL}/api/files/${img.path}`,
+          url: img.url ? img.url : (img.path ? `${API_URL}/api/files/${img.path}` : null),
           isBlurred: img.is_blurred
-        }))
+        })).filter(img => img.url)
       : [{ url: profilePhoto, isBlurred: false }];
 
   return (
