@@ -6,7 +6,8 @@ import {
   LayoutDashboard, Users, UserCheck, MapPin, Tag, Package, 
   Settings, LogOut, Menu, X, ChevronLeft, ChevronRight,
   Bell, Search, Globe, FileText, Image, Megaphone, BarChart3,
-  Shield, Palette, Languages, MousePointer, MessageSquare
+  Shield, Palette, Languages, MousePointer, MessageSquare,
+  Calendar, TrendingUp, CreditCard
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -26,23 +27,29 @@ const AdminLayout = () => {
       title: 'Genel',
       items: [
         { path: '', icon: LayoutDashboard, label: 'Dashboard', badge: null },
-        { path: '/site-ayarlari', icon: Settings, label: 'Site Ayarları', badge: null },
-        { path: '/seo', icon: Globe, label: 'SEO Yönetimi', badge: null },
-      ]
-    },
-    {
-      title: 'İçerik Yönetimi',
-      items: [
-        { path: '/profiller', icon: UserCheck, label: 'Profiller / İlanlar', badge: 'pending' },
-        { path: '/icerik', icon: FileText, label: 'Sayfa İçerikleri', badge: null },
-        { path: '/medya', icon: Image, label: 'Medya Yönetimi', badge: null },
+        { path: '/raporlar', icon: TrendingUp, label: 'Raporlar', badge: null },
       ]
     },
     {
       title: 'Kullanıcılar',
       items: [
         { path: '/kullanicilar', icon: Users, label: 'Tüm Kullanıcılar', badge: null },
-        { path: '/partnerler', icon: Shield, label: 'Partner Yönetimi', badge: null },
+        { path: '/partnerler', icon: Shield, label: 'Partnerler', badge: null },
+      ]
+    },
+    {
+      title: 'İlanlar',
+      items: [
+        { path: '/profiller', icon: UserCheck, label: 'Profiller / İlanlar', badge: 'pending' },
+        { path: '/randevular', icon: Calendar, label: 'Randevular', badge: null },
+      ]
+    },
+    {
+      title: 'İçerik',
+      items: [
+        { path: '/icerik', icon: FileText, label: 'Sayfa İçerikleri', badge: null },
+        { path: '/medya', icon: Image, label: 'Medya Yönetimi', badge: null },
+        { path: '/ceviri', icon: Languages, label: 'Çeviriler', badge: null },
       ]
     },
     {
@@ -50,16 +57,16 @@ const AdminLayout = () => {
       items: [
         { path: '/sehirler', icon: MapPin, label: 'Şehirler', badge: null },
         { path: '/kategoriler', icon: Tag, label: 'Kategoriler', badge: null },
-        { path: '/paketler', icon: Package, label: 'Paketler', badge: null },
+        { path: '/paketler', icon: CreditCard, label: 'Paketler', badge: null },
       ]
     },
     {
-      title: 'Sistem',
+      title: 'Ayarlar',
       items: [
+        { path: '/site-ayarlari', icon: Settings, label: 'Site Ayarları', badge: null },
+        { path: '/seo', icon: Globe, label: 'SEO Yönetimi', badge: null },
+        { path: '/sms', icon: MessageSquare, label: 'SMS Ayarları', badge: null },
         { path: '/entegrasyonlar', icon: MousePointer, label: 'Entegrasyonlar', badge: null },
-        { path: '/sms', icon: MessageSquare, label: 'SMS Yönetimi', badge: null },
-        { path: '/ceviri', icon: Languages, label: 'Dil & Çeviri', badge: null },
-        { path: '/raporlar', icon: BarChart3, label: 'Raporlar', badge: null },
       ]
     },
   ];

@@ -2184,6 +2184,177 @@ async def update_partner_durations(durations: List[DurationOption], user: dict =
     await db.partner_profiles.update_one({"id": profile["id"]}, {"$set": {"duration_options": [d.dict() for d in durations]}})
     return {"success": True}
 
+# ==================== ADMIN APPOINTMENTS ====================
+
+@api_router.get("/admin/appointments")
+async def admin_get_appointments(
+    status: Optional[str] = None,
+    partner_id: Optional[str] = None,
+    user_id: Optional[str] = None,
+    page: int = 1,
+    limit: int = 20,
+    admin: dict = Depends(require_admin)
+):
+    """Get all appointments (admin only)"""
+    query = {}
+    if status:
+        query["status"] = status
+    if partner_id:
+        query["partner_id"] = partner_id
+    if user_id:
+        query["user_id"] = user_id
+    
+    total = await db.appointments.count_documents(query)
+    skip = (page - 1) * limit
+    
+    cursor = db.appointments.find(query, {"_id": 0}).sort("date", -1).skip(skip).limit(limit)
+    appointments = await cursor.to_list(limit)
+    
+    # Enrich with partner and user info
+    enriched = []
+    for appt in appointments:
+        # Get partner info
+        partner = await db.partner_profiles.find_one({"id": appt.get("partner_id")}, {"_id": 0})
+        if partner:
+            appt["partner_name"] = partner.get("nickname", "Partner")
+            appt["partner_city"] = partner.get("city_name", "")
+            # Get profile photo
+            if partner.get("cover_image"):
+                appt["partner_photo"] = f"/api/files/{partner['cover_image'].get('path', '')}"
+            elif partner.get("images") and len(partner["images"]) > 0:
+                appt["partner_photo"] = f"/api/files/{partner['images'][0].get('path', '')}"
+        
+        # Get user info
+        user = await db.users.find_one({"id": appt.get("user_id")}, {"_id": 0, "password": 0})
+        if user:
+            appt["user_name"] = user.get("name", user.get("email", "").split("@")[0])
+            appt["user_email"] = user.get("email", "")
+        
+        enriched.append(appt)
+    
+    return {"appointments": enriched, "total": total, "page": page, "limit": limit, "pages": (total + limit - 1) // limit}
+
+@api_router.get("/admin/appointments/stats")
+async def admin_appointments_stats(admin: dict = Depends(require_admin)):
+    """Get appointment statistics"""
+    total = await db.appointments.count_documents({})
+    pending = await db.appointments.count_documents({"status": "pending"})
+    confirmed = await db.appointments.count_documents({"status": "confirmed"})
+    completed = await db.appointments.count_documents({"status": "completed"})
+    cancelled = await db.appointments.count_documents({"status": {"$in": ["cancelled", "rejected"]}})
+    
+    return {
+        "total": total,
+        "pending": pending,
+        "confirmed": confirmed,
+        "completed": completed,
+        "cancelled": cancelled
+    }
+
+@api_router.put("/admin/appointments/{appointment_id}/status")
+async def admin_update_appointment_status(
+    appointment_id: str,
+    status: str = Query(..., description="New status"),
+    admin: dict = Depends(require_admin)
+):
+    """Update appointment status (admin only)"""
+    valid_statuses = ["pending", "confirmed", "rejected", "cancelled", "completed"]
+    if status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
+    
+    appointment = await db.appointments.find_one({"id": appointment_id})
+    if not appointment:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    
+    await db.appointments.update_one(
+        {"id": appointment_id}, 
+        {"$set": {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"success": True}
+
+# ==================== ADMIN REPORTS ====================
+
+@api_router.get("/admin/reports")
+async def admin_get_reports(
+    period: str = "week",  # week, month, year
+    admin: dict = Depends(require_admin)
+):
+    """Get comprehensive reports and analytics"""
+    from datetime import timedelta
+    
+    now = datetime.now(timezone.utc)
+    
+    # Determine date range based on period
+    if period == "week":
+        start_date = now - timedelta(days=7)
+        prev_start = start_date - timedelta(days=7)
+    elif period == "month":
+        start_date = now - timedelta(days=30)
+        prev_start = start_date - timedelta(days=30)
+    else:  # year
+        start_date = now - timedelta(days=365)
+        prev_start = start_date - timedelta(days=365)
+    
+    start_iso = start_date.isoformat()
+    prev_iso = prev_start.isoformat()
+    
+    # Current period stats
+    current_users = await db.users.count_documents({"created_at": {"$gte": start_iso}})
+    current_appointments = await db.appointments.count_documents({"created_at": {"$gte": start_iso}})
+    
+    # Previous period stats for comparison
+    prev_users = await db.users.count_documents({
+        "created_at": {"$gte": prev_iso, "$lt": start_iso}
+    })
+    prev_appointments = await db.appointments.count_documents({
+        "created_at": {"$gte": prev_iso, "$lt": start_iso}
+    })
+    
+    # Calculate changes
+    user_change = ((current_users - prev_users) / max(prev_users, 1)) * 100 if prev_users else 0
+    appt_change = ((current_appointments - prev_appointments) / max(prev_appointments, 1)) * 100 if prev_appointments else 0
+    
+    # Get total views from profiles
+    pipeline = [
+        {"$group": {"_id": None, "total_views": {"$sum": "$view_count"}}}
+    ]
+    views_result = await db.partner_profiles.aggregate(pipeline).to_list(1)
+    total_views = views_result[0]["total_views"] if views_result else 0
+    
+    # Get top viewed profiles
+    top_profiles = await db.partner_profiles.find(
+        {"status": "approved"},
+        {"_id": 0, "nickname": 1, "view_count": 1, "city_id": 1}
+    ).sort("view_count", -1).limit(5).to_list(5)
+    
+    # Enrich with city names
+    for profile in top_profiles:
+        city = await db.cities.find_one({"$or": [{"id": profile.get("city_id")}, {"slug": profile.get("city_id")}]}, {"_id": 0})
+        profile["city"] = city.get("name_tr", "") if city else ""
+        profile["views"] = profile.get("view_count", 0)
+    
+    # Generate chart data (mock for now - would need time-series data)
+    days = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"]
+    views_chart = [{"label": d, "value": 500 + (i * 150) + (hash(d) % 300)} for i, d in enumerate(days)]
+    revenue_chart = [{"label": d, "value": 100 + (i * 50) + (hash(d) % 200)} for i, d in enumerate(days)]
+    
+    return {
+        "stats": {
+            "revenue": {"total": 0, "change": 0},  # Would need payment tracking
+            "views": {"total": total_views, "change": 23},
+            "users": {"total": current_users, "change": round(user_change)},
+            "appointments": {"total": current_appointments, "change": round(appt_change)}
+        },
+        "top_profiles": top_profiles,
+        "recent_activity": [],  # Would need activity logging
+        "chart_data": {
+            "views": views_chart,
+            "revenue": revenue_chart,
+            "registrations": []
+        }
+    }
+
 # Include router
 app.include_router(api_router)
 

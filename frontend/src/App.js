@@ -50,6 +50,8 @@ import AdminContent from './pages/admin/AdminContent';
 import AdminMedia from './pages/admin/AdminMedia';
 import AdminSMS from './pages/admin/AdminSMS';
 import AdminPartners from './pages/admin/AdminPartners';
+import AdminAppointments from './pages/admin/AdminAppointments';
+import AdminReports from './pages/admin/AdminReports';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, roles = [] }) => {
@@ -148,21 +150,21 @@ function AppRoutes() {
             </ProtectedRoute>
           }>
             <Route index element={<AdminDashboard />} />
-            <Route path="site-ayarlari" element={<AdminSiteSettings />} />
-            <Route path="seo" element={<AdminSEO />} />
-            <Route path="icerik" element={<AdminContent />} />
+            <Route path="raporlar" element={<AdminReports />} />
             <Route path="kullanicilar" element={<AdminUsers />} />
             <Route path="partnerler" element={<AdminPartners />} />
             <Route path="profiller" element={<AdminProfiles />} />
+            <Route path="randevular" element={<AdminAppointments />} />
+            <Route path="icerik" element={<AdminContent />} />
+            <Route path="medya" element={<AdminMedia />} />
+            <Route path="ceviri" element={<AdminContent />} />
             <Route path="sehirler" element={<AdminCities />} />
             <Route path="kategoriler" element={<AdminCategories />} />
             <Route path="paketler" element={<AdminPackages />} />
-            <Route path="entegrasyonlar" element={<AdminSettings />} />
-            <Route path="ceviri" element={<AdminContent />} />
-            <Route path="raporlar" element={<AdminDashboard />} />
-            <Route path="medya" element={<AdminMedia />} />
+            <Route path="site-ayarlari" element={<AdminSiteSettings />} />
+            <Route path="seo" element={<AdminSEO />} />
             <Route path="sms" element={<AdminSMS />} />
-            <Route path="ayarlar" element={<AdminSettings />} />
+            <Route path="entegrasyonlar" element={<AdminSettings />} />
           </Route>
         </Route>
       ))}
