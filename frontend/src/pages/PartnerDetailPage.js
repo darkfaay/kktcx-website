@@ -582,7 +582,7 @@ const PartnerDetailPage = () => {
                     navigate(`/${lang}/giris`);
                     return;
                   }
-                  navigate(`/${lang}/partner/${profile.slug || profile.id}/randevu`);
+                  navigate(`/${lang}/randevu/${profile.slug || profile.id}`);
                 }}
                 data-testid="appointment-btn"
               >

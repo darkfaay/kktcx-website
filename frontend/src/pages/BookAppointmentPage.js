@@ -22,6 +22,7 @@ const BookAppointmentPage = () => {
   const [availability, setAvailability] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
   
   // Booking state
   const [selectedDate, setSelectedDate] = useState(null);
@@ -33,7 +34,9 @@ const BookAppointmentPage = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   useEffect(() => {
+    console.log('BookAppointmentPage mounted, slug:', slug, 'user:', user?.email);
     if (!user) {
+      console.log('No user, redirecting to login');
       navigate(`/${lang}/giris`);
       return;
     }
@@ -41,17 +44,21 @@ const BookAppointmentPage = () => {
   }, [slug, user]);
 
   const fetchPartnerAndAvailability = async () => {
+    console.log('Fetching partner and availability for slug:', slug);
     try {
       // Fetch partner profile
       const profileRes = await axios.get(`${API_URL}/api/partners/${slug}?lang=${lang}`);
+      console.log('Profile response:', profileRes.data);
       setProfile(profileRes.data);
       
       // Fetch availability
       const month = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
       const availRes = await axios.get(`${API_URL}/api/availability/${profileRes.data.id}?month=${month}`);
+      console.log('Availability response:', availRes.data);
       setAvailability(availRes.data);
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError(err.message);
       toast.error('Partner bulunamadı');
     } finally {
       setLoading(false);
@@ -164,15 +171,24 @@ const BookAppointmentPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" data-testid="loading">
         <div className="animate-spin w-8 h-8 border-2 border-[#D4AF37] border-t-transparent rounded-full"></div>
+        <span className="ml-3 text-white">Yükleniyor...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" data-testid="error">
+        <p className="text-red-400">Hata: {error}</p>
       </div>
     );
   }
 
   if (!profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" data-testid="not-found">
         <p className="text-white/60">Partner bulunamadı</p>
       </div>
     );

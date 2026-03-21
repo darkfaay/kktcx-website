@@ -118,6 +118,13 @@ function AppRoutes() {
             <Route path="ayarlar" element={<UserSettingsPage />} />
           </Route>
           
+          {/* Appointment Booking Route - Must be before partner dashboard */}
+          <Route path="randevu/:slug" element={
+            <ProtectedRoute>
+              <BookAppointmentPage />
+            </ProtectedRoute>
+          } />
+          
           {/* Partner Dashboard Routes */}
           <Route path="partner" element={
             <ProtectedRoute roles={['partner', 'admin']}>
@@ -133,13 +140,6 @@ function AppRoutes() {
             <Route path="mesajlar/:conversationId" element={<ConversationPage />} />
             <Route path="payment/success" element={<PaymentSuccess />} />
           </Route>
-          
-          {/* Appointment Booking Route */}
-          <Route path="partner/:slug/randevu" element={
-            <ProtectedRoute>
-              <PublicLayout><BookAppointmentPage /></PublicLayout>
-            </ProtectedRoute>
-          } />
           
           {/* Admin Routes */}
           <Route path="admin" element={
