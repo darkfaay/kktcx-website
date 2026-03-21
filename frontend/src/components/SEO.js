@@ -1,10 +1,43 @@
 import { Helmet } from 'react-helmet-async';
 import { useLanguage } from '../context/AppContext';
+import { useState, useEffect, createContext, useContext } from 'react';
+import axios from 'axios';
 
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 const SITE_URL = 'https://kktcx.com';
 const SITE_NAME = 'KKTCX';
 
-// SEO translations for all supported languages
+// SEO Context for dynamic settings
+const SEOContext = createContext({ seoSettings: null });
+
+export const useSEOSettings = () => useContext(SEOContext);
+
+// SEO Settings Provider
+export const SEOSettingsProvider = ({ children }) => {
+  const [seoSettings, setSeoSettings] = useState(null);
+
+  useEffect(() => {
+    const fetchSEO = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/api/settings/public`);
+        if (response.data?.seo) {
+          setSeoSettings(response.data.seo);
+        }
+      } catch (error) {
+        console.error('Failed to fetch SEO settings:', error);
+      }
+    };
+    fetchSEO();
+  }, []);
+
+  return (
+    <SEOContext.Provider value={{ seoSettings }}>
+      {children}
+    </SEOContext.Provider>
+  );
+};
+
+// SEO translations for all supported languages (fallback values)
 const seoTranslations = {
   tr: {
     siteName: 'KKTCX - Kuzey Kıbrıs Eskort, Jigolo ve Partner Rehberi',
@@ -210,12 +243,16 @@ export const SEO = ({
   page
 }) => {
   const { lang } = useLanguage();
+  const { seoSettings } = useSEOSettings();
   const t = seoTranslations[lang] || seoTranslations.tr;
+  
+  // Get dynamic SEO settings from database (global settings)
+  const globalSeo = seoSettings?.global || {};
   
   // Determine final title and description
   let finalTitle = title;
   let finalDescription = description;
-  let finalKeywords = keywords || t.defaultKeywords;
+  let finalKeywords = keywords || globalSeo.keywords?.join(', ') || t.defaultKeywords;
   
   if (page && t.pages[page]) {
     finalTitle = finalTitle || t.pages[page].title;
@@ -231,11 +268,18 @@ export const SEO = ({
     finalDescription = `${partner.nickname} ${t.pages.partnerDetail?.descriptionPrefix || ''} ${partner.short_description || ''}`;
   }
   
-  finalTitle = finalTitle || t.defaultTitle;
-  finalDescription = finalDescription || t.defaultDescription;
+  // Use database title/description as ultimate fallback for homepage
+  if (page === 'home' && globalSeo.title) {
+    finalTitle = finalTitle || globalSeo.title;
+    finalDescription = finalDescription || globalSeo.description;
+  }
+  
+  finalTitle = finalTitle || globalSeo.title || t.defaultTitle;
+  finalDescription = finalDescription || globalSeo.description || t.defaultDescription;
   
   const finalUrl = url || (typeof window !== 'undefined' ? window.location.href : SITE_URL);
-  const finalImage = image || `${SITE_URL}/og-image.jpg`;
+  const finalImage = image || globalSeo.og_image || `${SITE_URL}/og-image.jpg`;
+  const twitterHandle = globalSeo.twitter_handle || '@kktcx';
   
   // Generate alternate language links
   const alternateLinks = Object.keys(seoTranslations).map(langCode => ({
@@ -280,6 +324,8 @@ export const SEO = ({
       
       {/* Twitter Card */}
       <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:site" content={twitterHandle} />
+      <meta name="twitter:creator" content={twitterHandle} />
       <meta name="twitter:title" content={finalTitle} />
       <meta name="twitter:description" content={finalDescription} />
       <meta name="twitter:image" content={finalImage} />

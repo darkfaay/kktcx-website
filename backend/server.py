@@ -100,6 +100,15 @@ async def get_public_settings():
     result = {}
     for s in settings:
         result[s["key"]] = s["value"]
+    
+    # SEO ayarlarını da ekle
+    seo_settings = await db.seo.find({}, {"_id": 0}).to_list(100)
+    seo_dict = {}
+    for seo in seo_settings:
+        page = seo.get("page", "global")
+        seo_dict[page] = {k: v for k, v in seo.items() if k != "page"}
+    result["seo"] = seo_dict
+    
     return result
 
 

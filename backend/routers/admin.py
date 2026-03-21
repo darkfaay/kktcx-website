@@ -492,37 +492,87 @@ async def update_content(
 @router.get("/seo")
 async def get_seo_settings(admin: dict = Depends(require_admin)):
     """Get SEO settings"""
-    seo = await db.seo.find({}, {"_id": 0}).to_list(100)
-    return seo
+    seo_list = await db.seo.find({}, {"_id": 0}).to_list(100)
+    
+    # Frontend'in beklediği formata dönüştür
+    result = {
+        "global": {},
+        "pages": [],
+        "robots": {},
+        "structured_data": {}
+    }
+    
+    for seo in seo_list:
+        page = seo.get("page", "global")
+        if page == "global":
+            result["global"] = {
+                "site_title": seo.get("title", ""),
+                "site_description": seo.get("description", ""),
+                "keywords": seo.get("keywords", []),
+                "og_image": seo.get("og_image", ""),
+                "twitter_handle": seo.get("twitter_handle", "@kktcx"),
+                "google_analytics": seo.get("google_analytics", ""),
+                "google_search_console": seo.get("google_search_console", ""),
+                "facebook_pixel": seo.get("facebook_pixel", ""),
+            }
+        elif page == "robots":
+            result["robots"] = seo
+        elif page == "structured_data":
+            result["structured_data"] = seo
+        else:
+            # Sayfa bazlı SEO
+            result["pages"].append({
+                "slug": page,
+                "name": seo.get("name", page),
+                "title": seo.get("title", ""),
+                "description": seo.get("description", ""),
+                "keywords": seo.get("keywords", []),
+                "og_title": seo.get("og_title", ""),
+                "og_description": seo.get("og_description", ""),
+            })
+    
+    return result
 
 
 @router.put("/seo/{page}")
 async def update_seo(
     page: str,
-    title: Optional[str] = None,
-    description: Optional[str] = None,
-    keywords: Optional[str] = None,
-    og_image: Optional[str] = None,
+    data: dict,
     admin: dict = Depends(require_admin)
 ):
     """Update SEO for a page"""
-    updates = {}
-    if title is not None:
-        updates["title"] = title
-    if description is not None:
-        updates["description"] = description
-    if keywords is not None:
-        updates["keywords"] = keywords
-    if og_image is not None:
-        updates["og_image"] = og_image
+    updates = {"page": page}
     
-    if updates:
-        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
-        await db.seo.update_one(
-            {"page": page},
-            {"$set": updates},
-            upsert=True
-        )
+    # Global ayarlar için alan eşleştirmesi
+    if page == "global":
+        if data.get("site_title") is not None:
+            updates["title"] = data["site_title"]
+        if data.get("site_description") is not None:
+            updates["description"] = data["site_description"]
+        if data.get("keywords") is not None:
+            updates["keywords"] = data["keywords"]
+        if data.get("og_image") is not None:
+            updates["og_image"] = data["og_image"]
+        if data.get("twitter_handle") is not None:
+            updates["twitter_handle"] = data["twitter_handle"]
+        if data.get("google_analytics") is not None:
+            updates["google_analytics"] = data["google_analytics"]
+        if data.get("google_search_console") is not None:
+            updates["google_search_console"] = data["google_search_console"]
+        if data.get("facebook_pixel") is not None:
+            updates["facebook_pixel"] = data["facebook_pixel"]
+    else:
+        # Sayfa veya diğer ayarlar
+        for key, value in data.items():
+            if value is not None:
+                updates[key] = value
+    
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.seo.update_one(
+        {"page": page},
+        {"$set": updates},
+        upsert=True
+    )
     
     return {"success": True}
 

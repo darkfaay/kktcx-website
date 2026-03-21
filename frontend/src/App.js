@@ -5,6 +5,7 @@ import { AuthProvider, LanguageProvider, useAuth } from './context/AppContext';
 import { Toaster } from './components/ui/sonner';
 import AgeVerification from './components/AgeVerification';
 import BrandingProvider from './components/BrandingProvider';
+import { SEOSettingsProvider } from './components/SEO';
 
 // Scroll to top on route change
 const ScrollToTop = () => {
@@ -199,9 +200,11 @@ function App() {
         <LanguageProvider>
           <AuthProvider>
             <BrandingProvider>
-              <AgeVerification />
-              <AppRoutes />
-              <Toaster position="top-right" richColors />
+              <SEOSettingsProvider>
+                <AgeVerification />
+                <AppRoutes />
+                <Toaster position="top-right" richColors />
+              </SEOSettingsProvider>
             </BrandingProvider>
           </AuthProvider>
         </LanguageProvider>
