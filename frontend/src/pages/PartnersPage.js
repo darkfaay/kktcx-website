@@ -212,6 +212,26 @@ const PartnersPage = () => {
     sort_by: searchParams.get('sort') || 'recommended',
   });
 
+  // Update filters when URL params change (e.g., from footer links)
+  useEffect(() => {
+    setFilters({
+      city_id: searchParams.get('city') || '',
+      category_id: searchParams.get('category') || '',
+      gender: searchParams.get('gender') || '',
+      service_type: searchParams.get('service') || '',
+      min_age: parseInt(searchParams.get('min_age')) || 18,
+      max_age: parseInt(searchParams.get('max_age')) || 60,
+      available_today: searchParams.get('available_today') === 'true',
+      available_tonight: searchParams.get('available_tonight') === 'true',
+      featured_only: searchParams.get('featured_only') === 'true',
+      verified_only: searchParams.get('verified_only') === 'true',
+      incall: searchParams.get('incall') === 'true',
+      outcall: searchParams.get('outcall') === 'true',
+      sort_by: searchParams.get('sort') || 'recommended',
+    });
+    setPage(1);
+  }, [searchParams]);
+
   useEffect(() => {
     fetchFiltersData();
   }, [lang]);

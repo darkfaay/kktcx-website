@@ -599,7 +599,7 @@ const HomePage = () => {
                   </h2>
                 </div>
               </div>
-              <Link to={`/${lang}/partnerler?featured=true`} className="text-[#E91E63] hover:text-[#FF6090] flex items-center gap-2 transition-colors group">
+              <Link to={`/${lang}/partnerler?featured=true`} className="text-[#D4AF37] hover:text-[#F3E5AB] flex items-center gap-2 transition-colors group">
                 Tümünü Gör 
                 <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -631,7 +631,7 @@ const HomePage = () => {
                   </h2>
                 </div>
               </div>
-              <Link to={`/${lang}/partnerler`} className="text-[#E91E63] hover:text-[#FF6090] flex items-center gap-2 transition-colors group">
+              <Link to={`/${lang}/partnerler`} className="text-[#D4AF37] hover:text-[#F3E5AB] flex items-center gap-2 transition-colors group">
                 Tümünü Gör 
                 <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -662,7 +662,7 @@ const HomePage = () => {
                   </h2>
                 </div>
               </div>
-              <Link to={`/${lang}/partnerler?sort=newest`} className="text-[#E91E63] hover:text-[#FF6090] flex items-center gap-2 transition-colors group">
+              <Link to={`/${lang}/partnerler?sort=newest`} className="text-[#D4AF37] hover:text-[#F3E5AB] flex items-center gap-2 transition-colors group">
                 Tümünü Gör 
                 <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -770,11 +770,11 @@ const HomePage = () => {
                 {homeData.cities.filter(c => c.region === 'north').map((city) => (
                   <Link
                     key={city.id}
-                    to={`/${lang}/${city.slug}/partnerler`}
+                    to={`/${lang}/partnerler?city=${city.slug}`}
                     className="sexy-card glass rounded-xl p-4 text-center group"
                     data-testid={`city-${city.slug}`}
                   >
-                    <MapPin className="w-6 h-6 text-[#E91E63] mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                    <MapPin className="w-6 h-6 text-[#D4AF37] mx-auto mb-2 group-hover:scale-110 transition-transform" />
                     <h3 className="text-white font-medium text-sm">{city.name}</h3>
                     <p className="text-white/50 text-xs mt-1">{city.partner_count || 0} İlan</p>
                   </Link>
@@ -792,7 +792,7 @@ const HomePage = () => {
                 {homeData.cities.filter(c => c.region === 'south').map((city) => (
                   <Link
                     key={city.id}
-                    to={`/${lang}/${city.slug}/partnerler`}
+                    to={`/${lang}/partnerler?city=${city.slug}`}
                     className="sexy-card glass rounded-xl p-4 text-center group"
                     data-testid={`city-${city.slug}`}
                   >
