@@ -3,10 +3,10 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth, useLanguage } from '../context/AppContext';
 import Logo from '../components/Logo';
 import { 
-  LayoutDashboard, Users, UserCheck, MapPin, Tag, Package, 
+  LayoutDashboard, Users, UserCheck, MapPin, Tag, 
   Settings, LogOut, Menu, X, ChevronLeft, ChevronRight,
-  Bell, Search, Globe, FileText, Image, Megaphone, BarChart3,
-  Shield, Palette, Languages, MousePointer, MessageSquare,
+  Bell, Search, Globe, FileText, Image, 
+  MousePointer, MessageSquare,
   Calendar, TrendingUp, CreditCard
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -34,22 +34,13 @@ const AdminLayout = () => {
       title: 'Kullanıcılar',
       items: [
         { path: '/kullanicilar', icon: Users, label: 'Tüm Kullanıcılar', badge: null },
-        { path: '/partnerler', icon: Shield, label: 'Partnerler', badge: null },
       ]
     },
     {
       title: 'İlanlar',
       items: [
-        { path: '/profiller', icon: UserCheck, label: 'Profiller / İlanlar', badge: 'pending' },
+        { path: '/partnerler', icon: UserCheck, label: 'Partner & İlanlar', badge: 'pending' },
         { path: '/randevular', icon: Calendar, label: 'Randevular', badge: null },
-      ]
-    },
-    {
-      title: 'İçerik',
-      items: [
-        { path: '/icerik', icon: FileText, label: 'Sayfa İçerikleri', badge: null },
-        { path: '/medya', icon: Image, label: 'Medya Yönetimi', badge: null },
-        { path: '/ceviri', icon: Languages, label: 'Çeviriler', badge: null },
       ]
     },
     {
@@ -65,6 +56,8 @@ const AdminLayout = () => {
       items: [
         { path: '/site-ayarlari', icon: Settings, label: 'Site Ayarları', badge: null },
         { path: '/seo', icon: Globe, label: 'SEO Yönetimi', badge: null },
+        { path: '/icerik', icon: FileText, label: 'Sayfa İçerikleri', badge: null },
+        { path: '/medya', icon: Image, label: 'Medya Yönetimi', badge: null },
         { path: '/sms', icon: MessageSquare, label: 'SMS Ayarları', badge: null },
         { path: '/entegrasyonlar', icon: MousePointer, label: 'Entegrasyonlar', badge: null },
       ]

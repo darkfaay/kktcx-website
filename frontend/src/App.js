@@ -39,7 +39,6 @@ import BookAppointmentPage from './pages/BookAppointmentPage';
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
-import AdminProfiles from './pages/admin/AdminProfiles';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminCities from './pages/admin/AdminCities';
 import AdminCategories from './pages/admin/AdminCategories';
@@ -153,16 +152,14 @@ function AppRoutes() {
             <Route path="raporlar" element={<AdminReports />} />
             <Route path="kullanicilar" element={<AdminUsers />} />
             <Route path="partnerler" element={<AdminPartners />} />
-            <Route path="profiller" element={<AdminProfiles />} />
             <Route path="randevular" element={<AdminAppointments />} />
-            <Route path="icerik" element={<AdminContent />} />
-            <Route path="medya" element={<AdminMedia />} />
-            <Route path="ceviri" element={<AdminContent />} />
             <Route path="sehirler" element={<AdminCities />} />
             <Route path="kategoriler" element={<AdminCategories />} />
             <Route path="paketler" element={<AdminPackages />} />
             <Route path="site-ayarlari" element={<AdminSiteSettings />} />
             <Route path="seo" element={<AdminSEO />} />
+            <Route path="icerik" element={<AdminContent />} />
+            <Route path="medya" element={<AdminMedia />} />
             <Route path="sms" element={<AdminSMS />} />
             <Route path="entegrasyonlar" element={<AdminSettings />} />
           </Route>
