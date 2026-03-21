@@ -587,3 +587,34 @@ async def get_media(
         "page": page,
         "pages": (total + limit - 1) // limit
     }
+
+
+# ==================== BRANDING UPLOAD ====================
+
+@router.post("/upload-branding")
+async def upload_branding(
+    file: UploadFile = File(...),
+    type: str = "logo",
+    admin: dict = Depends(require_admin)
+):
+    """Upload branding file (logo or favicon)"""
+    allowed_types = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/x-icon", "image/vnd.microsoft.icon", "image/svg+xml"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Invalid file type. Allowed: JPEG, PNG, WebP, GIF, ICO, SVG")
+    
+    data = await file.read()
+    if len(data) > 5 * 1024 * 1024:  # 5MB limit
+        raise HTTPException(status_code=400, detail="File too large. Max 5MB")
+    
+    ext = file.filename.split(".")[-1] if "." in file.filename else "png"
+    branding_id = str(uuid.uuid4())[:8]
+    path = f"{APP_NAME}/branding/{type}_{branding_id}.{ext}"
+    
+    result = put_object(path, data, file.content_type)
+    
+    return {
+        "success": True,
+        "url": result["path"],
+        "type": type
+    }
+

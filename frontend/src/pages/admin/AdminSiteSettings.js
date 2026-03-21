@@ -81,6 +81,38 @@ const AdminSiteSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingFavicon, setUploadingFavicon] = useState(false);
+
+  const handleFileUpload = async (file, type) => {
+    if (!file) return;
+    
+    const isLogo = type === 'logo';
+    if (isLogo) setUploadingLogo(true);
+    else setUploadingFavicon(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', type);
+      
+      const response = await api.post('/admin/upload-branding', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      if (response.data.url) {
+        const field = isLogo ? 'logo_url' : 'favicon_url';
+        updateSetting('branding', field, response.data.url);
+        toast.success(`${isLogo ? 'Logo' : 'Favicon'} başarıyla yüklendi`);
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Dosya yüklenirken hata oluştu');
+    } finally {
+      if (isLogo) setUploadingLogo(false);
+      else setUploadingFavicon(false);
+    }
+  };
 
   useEffect(() => {
     fetchSettings();
@@ -365,13 +397,40 @@ const AdminSiteSettings = () => {
                     className="input-glass flex-1"
                     placeholder="https://..."
                   />
-                  <Button variant="outline" className="btn-outline">
-                    <Upload className="w-4 h-4" />
-                  </Button>
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleFileUpload(e.target.files[0], 'logo')}
+                    />
+                    <Button variant="outline" className="btn-outline" asChild disabled={uploadingLogo}>
+                      <span>
+                        {uploadingLogo ? (
+                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Upload className="w-4 h-4" />
+                        )}
+                      </span>
+                    </Button>
+                  </label>
                 </div>
-                {settings.branding.logo_url && (
-                  <div className="mt-3 p-4 rounded-xl bg-white/5">
-                    <img src={settings.branding.logo_url} alt="Logo" className="h-12 object-contain" />
+                {settings.branding.logo_url && settings.branding.logo_url !== 'https://example.com/logo.png' && (
+                  <div className="mt-3 p-4 rounded-xl bg-white/5 flex items-center justify-between">
+                    <img 
+                      src={settings.branding.logo_url} 
+                      alt="Logo" 
+                      className="h-12 object-contain"
+                      onError={(e) => e.target.style.display = 'none'}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-400 hover:text-red-300"
+                      onClick={() => updateSetting('branding', 'logo_url', '')}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 )}
               </div>
@@ -384,10 +443,42 @@ const AdminSiteSettings = () => {
                     className="input-glass flex-1"
                     placeholder="https://..."
                   />
-                  <Button variant="outline" className="btn-outline">
-                    <Upload className="w-4 h-4" />
-                  </Button>
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*,.ico"
+                      className="hidden"
+                      onChange={(e) => handleFileUpload(e.target.files[0], 'favicon')}
+                    />
+                    <Button variant="outline" className="btn-outline" asChild disabled={uploadingFavicon}>
+                      <span>
+                        {uploadingFavicon ? (
+                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Upload className="w-4 h-4" />
+                        )}
+                      </span>
+                    </Button>
+                  </label>
                 </div>
+                {settings.branding.favicon_url && settings.branding.favicon_url !== 'https://example.com/favicon.ico' && (
+                  <div className="mt-3 p-4 rounded-xl bg-white/5 flex items-center justify-between">
+                    <img 
+                      src={settings.branding.favicon_url} 
+                      alt="Favicon" 
+                      className="h-8 w-8 object-contain"
+                      onError={(e) => e.target.style.display = 'none'}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-400 hover:text-red-300"
+                      onClick={() => updateSetting('branding', 'favicon_url', '')}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

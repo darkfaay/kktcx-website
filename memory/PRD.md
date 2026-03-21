@@ -268,9 +268,23 @@ KKTCX.com, Kuzey ve Güney Kıbrıs'a özel, sosyal eşlik hizmetleri platformud
   - Hero subtitle → `settings.homepage.hero_subtitle`
   - Hero description → `settings.homepage.hero_description`
   - Site tagline (badge) → `settings.general.site_tagline`
-- ✅ **SiteSettingsProvider Entegrasyonu**: `useSiteSettings()` hook'u HomePage'de kullanılıyor
-- ✅ **Site Ayarları Sayfası Çalışıyor**: `/tr/admin/site-ayarlari` endpoint'i düzgün çalışıyor
-- **Dosyalar**: `/app/frontend/src/pages/HomePage.js`, `/app/frontend/src/context/AppContext.js`
+- ✅ **İletişim Bilgileri Dinamik**: Footer ve İletişim sayfasında dinamik gösteriliyor
+  - E-posta → `settings.general.contact_email`
+  - Telefon → `settings.general.contact_phone`
+  - Adres → `settings.general.contact_address`
+- ✅ **Bakım Modu**: Aktif edildiğinde site kapanıyor, sadece admin'ler görebiliyor
+- ✅ **Sosyal Medya Linkleri**: Footer'da dinamik (Instagram, Twitter, Telegram)
+- ✅ **Logo ve Favicon Sistemi**: 
+  - Dinamik logo URL desteği (görsel yüklenirse gösterilir)
+  - Dinamik favicon URL desteği
+  - Dosya yükleme endpoint'i eklendi (`/api/admin/upload-branding`)
+  - BrandingProvider context oluşturuldu
+- **Dosyalar**: 
+  - `/app/frontend/src/components/BrandingProvider.js` (YENİ)
+  - `/app/frontend/src/components/Logo.js` (GÜNCELLENDİ)
+  - `/app/frontend/src/layouts/PublicLayout.js` (GÜNCELLENDİ)
+  - `/app/frontend/src/pages/static/ContactPage.js` (GÜNCELLENDİ)
+  - `/app/backend/routers/admin.py` (YENİ ENDPOINT)
 
 ### SEO'ya Jigolo Terimleri Eklendi (TAMAMLANDI)
 - ✅ **index.html Güncellemeleri**:

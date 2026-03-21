@@ -1,7 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, createContext, useContext } from 'react';
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
+
+// Context for branding
+const BrandingContext = createContext({ branding: null });
+
+export const useBranding = () => useContext(BrandingContext);
 
 const BrandingProvider = ({ children }) => {
   const [branding, setBranding] = useState(null);
@@ -29,17 +34,11 @@ const BrandingProvider = ({ children }) => {
           root.style.setProperty('--color-accent', brand.accent_color);
         }
         
-        // Favicon güncelle
-        if (brand.favicon_url && brand.favicon_url !== 'https://example.com/favicon.ico') {
-          const existingFavicon = document.querySelector("link[rel*='icon']");
-          if (existingFavicon) {
-            existingFavicon.href = brand.favicon_url;
-          } else {
-            const link = document.createElement('link');
-            link.rel = 'icon';
-            link.href = brand.favicon_url;
-            document.head.appendChild(link);
-          }
+        // Favicon güncelle - geçerli URL kontrolü
+        if (brand.favicon_url && 
+            brand.favicon_url !== 'https://example.com/favicon.ico' &&
+            brand.favicon_url.startsWith('http')) {
+          updateFavicon(brand.favicon_url);
         }
       }
     } catch (error) {
@@ -47,7 +46,30 @@ const BrandingProvider = ({ children }) => {
     }
   };
 
-  return <>{children}</>;
+  const updateFavicon = (url) => {
+    // Mevcut favicon'ları kaldır
+    const existingFavicons = document.querySelectorAll("link[rel*='icon']");
+    existingFavicons.forEach(el => el.remove());
+    
+    // Yeni favicon ekle
+    const link = document.createElement('link');
+    link.rel = 'icon';
+    link.type = 'image/x-icon';
+    link.href = url;
+    document.head.appendChild(link);
+    
+    // Apple touch icon da ekle
+    const appleLink = document.createElement('link');
+    appleLink.rel = 'apple-touch-icon';
+    appleLink.href = url;
+    document.head.appendChild(appleLink);
+  };
+
+  return (
+    <BrandingContext.Provider value={{ branding }}>
+      {children}
+    </BrandingContext.Provider>
+  );
 };
 
 export default BrandingProvider;
