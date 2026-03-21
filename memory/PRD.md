@@ -381,3 +381,56 @@ KKTCX.com, Kuzey ve Güney Kıbrıs'a özel, sosyal eşlik hizmetleri platformud
   - Routing sorunu çözüldü
   - Giriş yapmamış kullanıcılar için giriş sayfasına yönlendirme
 - ✅ **Test Sonuçları**: 14/14 backend testi geçti (100%), frontend tamamen fonksiyonel
+
+### Admin Panel İyileştirmeleri ve Randevu Sistemi (Tamamlandı - 21 Mart 2026)
+- ✅ **Admin Panel Ayrımı**:
+  - "Partner Yönetimi" sayfası ayrıldı (sadece partnerler)
+  - "Tüm Kullanıcılar" sayfası ayrıldı (sadece normal kullanıcılar)
+  - Partner kartları: fotoğraf, istatistikler, doğrula/pasif yap butonları
+  - Stats kartları: Toplam, Aktif, Doğrulanmış, Pasif sayıları
+- ✅ **Admin Profil Fotoğrafları Düzeltildi**:
+  - `getProfileImage` fonksiyonu güncellendi
+  - photo_url, cover_url, images[0].url kontrolü eklendi
+  - Artık gerçek profil fotoğrafları görünüyor
+- ✅ **Partner Profil Düzenleme**:
+  - Duplike "Hizmet Kategorileri" bölümü kaldırıldı
+  - Sadece Hizmet Türü ve Yönelim kaldı
+- ✅ **Partnerler Sayfası Filtre Düzeltmesi**:
+  - Kategori filtresi tamamen kaldırıldı
+  - Filtreler: Cinsiyet, Hizmet Türü, Şehir, Yaş Aralığı
+- ✅ **Randevu Sistemi (Appointment Booking)**:
+  - Backend API'leri:
+    - `GET /api/availability/{partner_id}` - Müsaitlik ve süre seçenekleri
+    - `POST /api/appointments` - Randevu oluşturma
+    - `GET /api/appointments` - Kullanıcı randevuları listesi
+    - `PUT /api/appointments/{id}/status` - Randevu durumu güncelleme
+    - `PUT /api/partner/availability` - Partner müsaitlik ayarları
+    - `PUT /api/partner/durations` - Partner süre seçenekleri
+  - Frontend Sayfaları:
+    - `BookAppointmentPage.js` - Takvim ve saat seçimi ile randevu alma
+    - `PartnerAppointments.js` - Partner randevu yönetimi
+  - Süre Seçenekleri: 1 Saat, 2 Saat, Yarım Gün, Tam Gün
+  - Otomatik veya manuel onay (partner ayarlarından)
+  - Dolu/müsait saat gösterimi
+- ✅ **Partner Detay Sayfası Randevu Butonu**:
+  - "Randevu Al" butonu eklendi (altın rengi)
+  - Giriş kontrolü ve yönlendirme
+- ✅ **Partner Dashboard Menüsü**:
+  - "Randevular" linki eklendi
+  - Badge desteği
+- ✅ **Test Sonuçları**: 19/19 backend, %100 frontend (iteration 9)
+
+---
+
+## Backlog / Bekleyen Görevler
+
+### P1 - Backend Modülerleştirme (Onaylandı)
+- [ ] server.py'yi routers, services, models olarak ayır
+- [ ] Route grupları: auth, partners, admin, appointments, etc.
+- [ ] Kod organizasyonu iyileştirmesi
+
+### P2 - Gelecek Özellikler
+- [ ] PostgreSQL'e geçiş
+- [ ] react-i18next ile tam i18n desteği
+- [ ] Partner/Kullanıcı panel modernizasyonu (Midnight Velvet tema)
+- [ ] Stripe ile randevu ödeme entegrasyonu
