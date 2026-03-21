@@ -113,6 +113,16 @@ h1, h2, h3, h4, h5, h6 {
   background-clip: text;
 }
 
+/* Logo gradient animation */
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.animate-gradient {
+  animation: gradient-shift 3s ease infinite;
+}
+
 /* Rose gradient */
 .rose-gradient {
   background: linear-gradient(135deg, #E91E63 0%, #9C27B0 100%);
