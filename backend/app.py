@@ -1,21 +1,25 @@
 """
 Simple KKTCX Backend Server
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 from contextlib import asynccontextmanager
 import bcrypt
 import uuid
 import os
 from datetime import datetime, timezone
+from pathlib import Path
 
 # Configuration
 MONGO_URL = os.environ.get('MONGO_URL')
 DB_NAME = os.environ.get('DB_NAME', 'kktcx')
 JWT_SECRET = os.environ.get('JWT_SECRET', 'kktcx-secret-key')
+
+# Frontend build path
+FRONTEND_BUILD = Path(__file__).parent.parent / "frontend" / "build"
 
 # Database
 client = None
@@ -28,6 +32,8 @@ async def lifespan(app: FastAPI):
     client = AsyncIOMotorClient(MONGO_URL)
     db = client[DB_NAME]
     print(f"Connected to database: {DB_NAME}")
+    print(f"Frontend build path: {FRONTEND_BUILD}")
+    print(f"Frontend exists: {FRONTEND_BUILD.exists()}")
     yield
     client.close()
 
@@ -134,6 +140,23 @@ async def seed_database(secret: str = ""):
             results["settings"] += 1
 
     return {"success": True, "results": results}
+
+
+# Serve static files from frontend build
+if FRONTEND_BUILD.exists():
+    # Serve static assets (js, css, images)
+    app.mount("/static", StaticFiles(directory=FRONTEND_BUILD / "static"), name="static")
+    
+    # Catch-all route for React Router - must be last
+    @app.get("/{full_path:path}")
+    async def serve_react_app(request: Request, full_path: str):
+        # If it's an API route, this won't match (already handled above)
+        # Serve index.html for all other routes (React Router handles them)
+        index_file = FRONTEND_BUILD / "index.html"
+        if index_file.exists():
+            return FileResponse(index_file)
+        return HTMLResponse(content="Frontend not found", status_code=404)
+
 
 if __name__ == "__main__":
     import uvicorn
