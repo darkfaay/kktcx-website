@@ -36,10 +36,12 @@ async def get_conversations(user: dict = Depends(get_current_user)):
                     "is_partner": profile is not None
                 }
         
-        last_msg = await db.messages.find_one(
+        # Get last message - use find().sort().limit(1) instead of find_one().sort()
+        last_msg_cursor = db.messages.find(
             {"conversation_id": conv["id"]}, {"_id": 0}
-        ).sort("created_at", -1)
-        conv["last_message"] = last_msg
+        ).sort("created_at", -1).limit(1)
+        last_msgs = await last_msg_cursor.to_list(1)
+        conv["last_message"] = last_msgs[0] if last_msgs else None
         
         unread = await db.messages.count_documents({
             "conversation_id": conv["id"],

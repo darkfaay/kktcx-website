@@ -128,9 +128,9 @@ const MessagesPage = () => {
                     <h3 className="text-white font-semibold truncate">
                       {conversation.other_user?.name || 'Kullanıcı'}
                     </h3>
-                    {conversation.last_message_at && (
+                    {conversation.last_message?.created_at && (
                       <span className="text-white/40 text-xs">
-                        {formatDistanceToNow(new Date(conversation.last_message_at), { 
+                        {formatDistanceToNow(new Date(conversation.last_message.created_at), { 
                           addSuffix: true,
                           locale: locales[lang] || locales.tr
                         })}
@@ -138,7 +138,7 @@ const MessagesPage = () => {
                     )}
                   </div>
                   <p className="text-white/50 text-sm truncate mt-1">
-                    {conversation.last_message || 'Henüz mesaj yok'}
+                    {conversation.last_message?.content || 'Henüz mesaj yok'}
                   </p>
                 </div>
 
