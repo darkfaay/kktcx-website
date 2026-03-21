@@ -260,7 +260,33 @@ KKTCX.com, Kuzey ve Güney Kıbrıs'a özel, sosyal eşlik hizmetleri platformud
 
 ---
 
-## Son Güncellemeler (21 Mart 2026)
+## Son Güncellemeler (21 Mart 2026 - Session 5)
+
+### Dinamik Site Ayarları Sistemi (TAMAMLANDI)
+- ✅ **Ana Sayfa Dinamik İçerik**: Homepage artık veritabanındaki site ayarlarını kullanıyor
+  - Hero title (Tutkunun Adresi) → `settings.homepage.hero_title`
+  - Hero subtitle → `settings.homepage.hero_subtitle`
+  - Hero description → `settings.homepage.hero_description`
+  - Site tagline (badge) → `settings.general.site_tagline`
+- ✅ **SiteSettingsProvider Entegrasyonu**: `useSiteSettings()` hook'u HomePage'de kullanılıyor
+- ✅ **Site Ayarları Sayfası Çalışıyor**: `/tr/admin/site-ayarlari` endpoint'i düzgün çalışıyor
+- **Dosyalar**: `/app/frontend/src/pages/HomePage.js`, `/app/frontend/src/context/AppContext.js`
+
+### SEO'ya Jigolo Terimleri Eklendi (TAMAMLANDI)
+- ✅ **index.html Güncellemeleri**:
+  - Title: "KKTCX - Kuzey Kıbrıs Eskort, **Jigolo** ve Partner Platformu"
+  - Description: "...eskort, **jigolo**, partner ve refakatçi hizmetleri..."
+  - Keywords: `jigolo kıbrıs, erkek partner kktc, kuzey kıbrıs jigolo, girne jigolo, lefkoşa jigolo, erkek eskort kıbrıs, male escort cyprus, jigolo hizmeti kktc`
+- ✅ **SEO.js Güncellemeleri** (Tüm dillerde):
+  - Türkçe: jigolo, erkek partner, erkek eskort
+  - İngilizce: gigolo, male escort
+  - Rusça: жиголо, мужской эскорт
+  - Almanca: Gigolo, männlicher Escort
+- **Dosyalar**: `/app/frontend/public/index.html`, `/app/frontend/src/components/SEO.js`
+
+---
+
+## Son Güncellemeler (21 Mart 2026 - Session 4)
 - ✅ 18 Kıbrıs şehri eklendi (Kuzey + Güney)
 - ✅ Rumca dil desteği eklendi (Ελληνικά)
 - ✅ Yasal hizmet türleri güncellendi (eskort/jigolo kaldırıldı)
