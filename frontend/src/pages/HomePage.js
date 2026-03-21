@@ -573,7 +573,7 @@ const HomePage = () => {
       </section>
 
       {/* Premium Homepage Showcase Section */}
-      {homeData?.homepage_vitrin?.length > 0 && (
+      {siteSettings.homepage?.show_vitrin !== false && homeData?.homepage_vitrin?.length > 0 && (
         <section className="py-20 md:py-32 relative overflow-hidden">
           {/* Premium Background Effect */}
           <div className="absolute inset-0 bg-gradient-to-b from-[#FFD700]/5 via-transparent to-transparent"></div>
@@ -597,7 +597,7 @@ const HomePage = () => {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {homeData.homepage_vitrin.map((profile) => (
+              {homeData.homepage_vitrin.slice(0, siteSettings.homepage?.partners_per_section || 8).map((profile) => (
                 <PremiumShowcaseCard key={profile.id} profile={profile} lang={lang} />
               ))}
             </div>
@@ -606,7 +606,7 @@ const HomePage = () => {
       )}
 
       {/* VIP Section */}
-      {homeData?.vitrin_profiles?.length > 0 && (
+      {siteSettings.homepage?.show_vitrin !== false && homeData?.vitrin_profiles?.length > 0 && (
         <section className="py-16 md:py-24">
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between mb-10">
@@ -628,7 +628,7 @@ const HomePage = () => {
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-              {homeData.vitrin_profiles.map((profile) => (
+              {homeData.vitrin_profiles.slice(0, siteSettings.homepage?.partners_per_section || 8).map((profile) => (
                 <PartnerCard key={profile.id} profile={profile} lang={lang} premium />
               ))}
             </div>
@@ -637,7 +637,7 @@ const HomePage = () => {
       )}
 
       {/* Featured Partners */}
-      {homeData?.featured_profiles?.length > 0 && (
+      {siteSettings.homepage?.show_featured !== false && homeData?.featured_profiles?.length > 0 && (
         <section className="py-16 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-[#E91E63]/5 to-transparent"></div>
           <div className="container mx-auto px-4 relative">
@@ -660,7 +660,7 @@ const HomePage = () => {
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-              {homeData.featured_profiles.map((profile) => (
+              {homeData.featured_profiles.slice(0, siteSettings.homepage?.partners_per_section || 8).map((profile) => (
                 <PartnerCard key={profile.id} profile={profile} lang={lang} />
               ))}
             </div>
@@ -691,7 +691,7 @@ const HomePage = () => {
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-              {homeData.new_profiles.map((profile) => (
+              {homeData.new_profiles.slice(0, siteSettings.homepage?.partners_per_section || 8).map((profile) => (
                 <PartnerCard key={profile.id} profile={profile} lang={lang} />
               ))}
             </div>
@@ -771,7 +771,7 @@ const HomePage = () => {
       </section>
 
       {/* Cities Section */}
-      {homeData?.cities?.length > 0 && (
+      {siteSettings.homepage?.show_cities !== false && homeData?.cities?.length > 0 && (
         <section className="py-20">
           <div className="container mx-auto px-4">
             <div className="text-center mb-14">
