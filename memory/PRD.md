@@ -100,27 +100,47 @@ KKTCX.com, Kuzey ve Güney Kıbrıs'a özel, sosyal eşlik hizmetleri platformud
 
 ## Devam Eden / Placeholder Özellikler 🚧
 
-### P1: Gerçek Zamanlı Sohbet
-- [ ] WebSocket bağlantısı (placeholder)
-- [ ] Mesaj gönderme/alma
-- [ ] Okundu bildirimi
-- **Dosya**: `/app/frontend/src/pages/user/ConversationPage.js`
-
-### P1: Ödeme Sistemi (Stripe)
-- [ ] Paket satın alma akışı
-- [ ] Stripe Checkout entegrasyonu
-- [ ] Ödeme onay sayfası
-- **Not**: Stripe playbook alındı, endpoint placeholder
-
-### P1: Fotoğraf Yükleme
-- [ ] Fotoğraf yükleme UI tamamlandı
-- [ ] Object storage entegrasyonu hazır
-- **Not**: Fonksiyonel ama test edilmedi
-
 ### P1: SMS Bildirimleri (Netgsm)
 - [ ] Yeni mesaj bildirimi
 - [ ] API key admin panelden girilecek
 - **Not**: Placeholder endpoint mevcut
+
+---
+
+## Tamamlanan P1 Özellikler ✅ (21 Mart 2026 - Session 3)
+
+### P1: Doğrulanmış Üye Rozeti (Verified Badge)
+- [x] Admin panelden profil doğrulama toggle'ı
+- [x] Backend endpoint: `PUT /api/admin/profiles/{id}/verified`
+- [x] Frontend: Mavi kalkan ikonu (Shield) ile badge gösterimi
+- [x] AdminProfiles.js'de doğrula butonu ve stats card
+- **Test**: 100% başarılı
+
+### P1: Gerçek Zamanlı Sohbet (WebSocket)
+- [x] WebSocket ConnectionManager sınıfı (backend)
+- [x] WebSocket endpoint: `ws://[host]/ws/chat/{token}`
+- [x] Mesaj gönderme/alma (gerçek zamanlı)
+- [x] Okundu bildirimi (read receipts)
+- [x] Yazıyor göstergesi (typing indicator)
+- [x] Bağlantı durumu göstergesi (online/offline)
+- [x] Frontend WebSocket entegrasyonu (ConversationPage.js)
+- **Dosya**: `/app/frontend/src/pages/user/ConversationPage.js`
+- **Test**: 100% başarılı
+
+### P1: Medya Yönetimi
+- [x] Backend API'leri: GET/POST/DELETE `/api/admin/media`
+- [x] Dosya yükleme, listeleme, silme
+- [x] Storage istatistikleri
+- [x] Frontend AdminMedia.js gerçek API'ye bağlandı
+- **Test**: 100% başarılı
+
+### P1: Ödeme Sistemi (Stripe)
+- [x] Paket satın alma akışı
+- [x] Stripe Checkout entegrasyonu
+- [x] Ödeme onay sayfası (PaymentSuccess.js)
+- [x] 4 paket: Featured ($29.99), City Vitrin ($49.99), Homepage Vitrin ($79.99), Premium ($99.99)
+- **Dosyalar**: `/app/frontend/src/pages/partner/PartnerPackages.js`, `PaymentSuccess.js`
+- **Test**: 100% başarılı
 
 ---
 
