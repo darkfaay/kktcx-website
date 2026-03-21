@@ -43,6 +43,7 @@ const AdminMedia = () => {
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
+  const [storageStats, setStorageStats] = useState({ total_size: 0, total_files: 0 });
 
   useEffect(() => {
     fetchFiles();
@@ -57,14 +58,14 @@ const AdminMedia = () => {
 
       const response = await api.get(`/admin/media?${params.toString()}`);
       setFiles(response.data.files || []);
+      
+      // Update stats from response
+      if (response.data.storage) {
+        setStorageStats(response.data.storage);
+      }
     } catch (error) {
       console.error('Failed to fetch files:', error);
-      // Mock data for demo
-      setFiles([
-        { id: '1', filename: 'profile_1.jpg', type: 'image', size: 245000, url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400', created_at: new Date().toISOString() },
-        { id: '2', filename: 'profile_2.jpg', type: 'image', size: 189000, url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400', created_at: new Date().toISOString() },
-        { id: '3', filename: 'banner.jpg', type: 'image', size: 512000, url: 'https://images.unsplash.com/photo-1524250502761-1ac6f2e30d43?w=400', created_at: new Date().toISOString() },
-      ]);
+      setFiles([]);
     } finally {
       setLoading(false);
     }
@@ -125,9 +126,9 @@ const AdminMedia = () => {
   };
 
   const stats = {
-    total: files.length,
-    images: files.filter(f => f.type?.includes('image')).length,
-    totalSize: files.reduce((acc, f) => acc + (f.size || 0), 0),
+    total: storageStats.total_files || files.length,
+    images: files.filter(f => f.type?.includes('image') || f.content_type?.includes('image')).length,
+    totalSize: storageStats.total_size || files.reduce((acc, f) => acc + (f.size || 0), 0),
   };
 
   return (

@@ -121,6 +121,18 @@ const AdminProfiles = () => {
     }
   };
 
+  const toggleVerified = async (profileId, currentValue) => {
+    try {
+      await api.put(`/admin/profiles/${profileId}/verified`, null, {
+        params: { is_verified: !currentValue }
+      });
+      toast.success('Doğrulama durumu güncellendi');
+      fetchProfiles();
+    } catch (error) {
+      toast.error('İşlem başarısız');
+    }
+  };
+
   const getStatusBadge = (status) => {
     const badges = {
       draft: { color: 'bg-gray-500/20 text-gray-400', label: 'Taslak' },
@@ -150,6 +162,7 @@ const AdminProfiles = () => {
     total: total,
     pending: profiles.filter(p => p.status === 'pending').length,
     approved: profiles.filter(p => p.status === 'approved').length,
+    verified: profiles.filter(p => p.is_verified).length,
     vitrin: profiles.filter(p => p.is_vitrin).length,
   };
 
@@ -182,7 +195,7 @@ const AdminProfiles = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <div className="glass rounded-xl p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
@@ -213,6 +226,17 @@ const AdminProfiles = () => {
             <div>
               <p className="text-2xl font-bold text-white">{stats.approved}</p>
               <p className="text-white/50 text-xs">Onaylı</p>
+            </div>
+          </div>
+        </div>
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+              <Shield className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-white">{stats.verified}</p>
+              <p className="text-white/50 text-xs">Doğrulanmış</p>
             </div>
           </div>
         </div>
@@ -297,6 +321,11 @@ const AdminProfiles = () => {
                 
                 {/* Feature Badges */}
                 <div className="absolute top-3 right-3 flex gap-2">
+                  {profile.is_verified && (
+                    <span className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center" title="Doğrulanmış">
+                      <Shield className="w-4 h-4 text-white" />
+                    </span>
+                  )}
                   {profile.is_vitrin && (
                     <span className="w-8 h-8 rounded-full bg-[#E91E63] flex items-center justify-center">
                       <Sparkles className="w-4 h-4 text-white" />
@@ -371,21 +400,22 @@ const AdminProfiles = () => {
                     <>
                       <Button
                         size="sm"
+                        variant={profile.is_verified ? 'default' : 'outline'}
+                        className={`flex-1 ${profile.is_verified ? 'bg-blue-500' : 'btn-outline'}`}
+                        onClick={() => toggleVerified(profile.id, profile.is_verified)}
+                        title="Doğrula"
+                      >
+                        <Shield className="w-4 h-4 mr-1" />
+                        Doğrula
+                      </Button>
+                      <Button
+                        size="sm"
                         variant={profile.is_vitrin ? 'default' : 'outline'}
                         className={`flex-1 ${profile.is_vitrin ? 'bg-[#E91E63]' : 'btn-outline'}`}
                         onClick={() => toggleVitrin(profile.id, profile.is_vitrin)}
                       >
                         <Sparkles className="w-4 h-4 mr-1" />
                         Vitrin
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant={profile.is_featured ? 'default' : 'outline'}
-                        className={`flex-1 ${profile.is_featured ? 'bg-yellow-500' : 'btn-outline'}`}
-                        onClick={() => toggleFeatured(profile.id, profile.is_featured)}
-                      >
-                        <Star className="w-4 h-4 mr-1" />
-                        Öne Çıkar
                       </Button>
                     </>
                   )}
@@ -454,6 +484,17 @@ const AdminProfiles = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
+                        <button
+                          onClick={() => toggleVerified(profile.id, profile.is_verified)}
+                          className={`p-2 rounded-lg transition-colors ${
+                            profile.is_verified 
+                              ? 'bg-blue-500/20 text-blue-400' 
+                              : 'bg-white/5 text-white/40 hover:text-white/70'
+                          }`}
+                          title="Doğrulanmış"
+                        >
+                          <Shield className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => toggleFeatured(profile.id, profile.is_featured)}
                           className={`p-2 rounded-lg transition-colors ${

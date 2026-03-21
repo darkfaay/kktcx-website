@@ -78,6 +78,47 @@ logger = logging.getLogger(__name__)
 app = FastAPI(title="KKTCX API")
 api_router = APIRouter(prefix="/api")
 
+# ==================== WEBSOCKET CONNECTION MANAGER ====================
+
+class ConnectionManager:
+    def __init__(self):
+        # user_id -> list of websocket connections
+        self.active_connections: Dict[str, List[WebSocket]] = {}
+    
+    async def connect(self, websocket: WebSocket, user_id: str):
+        await websocket.accept()
+        if user_id not in self.active_connections:
+            self.active_connections[user_id] = []
+        self.active_connections[user_id].append(websocket)
+        logger.info(f"WebSocket connected for user: {user_id}")
+    
+    def disconnect(self, websocket: WebSocket, user_id: str):
+        if user_id in self.active_connections:
+            if websocket in self.active_connections[user_id]:
+                self.active_connections[user_id].remove(websocket)
+            if not self.active_connections[user_id]:
+                del self.active_connections[user_id]
+        logger.info(f"WebSocket disconnected for user: {user_id}")
+    
+    async def send_personal_message(self, message: dict, user_id: str):
+        """Send message to all connections of a specific user"""
+        if user_id in self.active_connections:
+            for connection in self.active_connections[user_id]:
+                try:
+                    await connection.send_json(message)
+                except Exception as e:
+                    logger.error(f"Error sending message to {user_id}: {e}")
+    
+    async def broadcast_to_conversation(self, message: dict, user_ids: List[str]):
+        """Send message to all users in a conversation"""
+        for user_id in user_ids:
+            await self.send_personal_message(message, user_id)
+    
+    def is_user_online(self, user_id: str) -> bool:
+        return user_id in self.active_connections and len(self.active_connections[user_id]) > 0
+
+ws_manager = ConnectionManager()
+
 # ==================== MODELS ====================
 
 class UserRole:
@@ -649,7 +690,7 @@ async def get_file(path: str, auth: str = Query(None), authorization: str = Head
     try:
         data, content_type = get_object(path)
         return Response(content=data, media_type=content_type)
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=404, detail="File not found")
 
 @api_router.delete("/partner/images/{image_id}")
@@ -955,8 +996,19 @@ async def send_message(data: MessageCreate, user: dict = Depends(get_current_use
         }}
     )
     
-    # Send SMS notification
-    if receiver.get("phone"):
+    # Send real-time WebSocket notification to receiver
+    ws_message = {
+        "type": "new_message",
+        "message": {k: v for k, v in message.items() if k != "_id"},
+        "sender": {
+            "id": user["id"],
+            "name": user.get("name", user.get("email", "").split("@")[0])
+        }
+    }
+    await ws_manager.send_personal_message(ws_message, data.receiver_id)
+    
+    # Send SMS notification only if user is offline
+    if receiver.get("phone") and not ws_manager.is_user_online(data.receiver_id):
         await send_sms_notification(
             receiver["phone"],
             "KKTCX üzerinde yeni bir mesajınız var. Giriş yaparak görüntüleyin."
@@ -1351,6 +1403,150 @@ async def admin_toggle_city_vitrin(profile_id: str, is_city_vitrin: bool, admin:
     )
     return {"success": True}
 
+@api_router.put("/admin/profiles/{profile_id}/verified")
+async def admin_toggle_verified(profile_id: str, is_verified: bool, admin: dict = Depends(require_admin)):
+    """Toggle profile verification status (verified badge)"""
+    await db.partner_profiles.update_one(
+        {"id": profile_id},
+        {"$set": {"is_verified": is_verified, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"success": True}
+
+# ==================== MEDIA MANAGEMENT ====================
+
+@api_router.get("/admin/media")
+async def admin_get_media(
+    type: Optional[str] = None,
+    search: Optional[str] = None,
+    partner_id: Optional[str] = None,
+    page: int = 1,
+    limit: int = 50,
+    admin: dict = Depends(require_admin)
+):
+    """Get all uploaded media files"""
+    query = {}
+    
+    if type:
+        if type == "image":
+            query["content_type"] = {"$regex": "^image/"}
+        elif type == "video":
+            query["content_type"] = {"$regex": "^video/"}
+        elif type == "document":
+            query["content_type"] = {"$regex": "^application/"}
+    
+    if search:
+        query["filename"] = {"$regex": search, "$options": "i"}
+    
+    if partner_id:
+        query["user_id"] = partner_id
+    
+    total = await db.media_files.count_documents(query)
+    skip = (page - 1) * limit
+    
+    files = await db.media_files.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    # Calculate storage stats
+    pipeline = [
+        {"$group": {
+            "_id": None,
+            "total_size": {"$sum": "$size"},
+            "total_files": {"$sum": 1}
+        }}
+    ]
+    stats_result = await db.media_files.aggregate(pipeline).to_list(1)
+    storage_stats = stats_result[0] if stats_result else {"total_size": 0, "total_files": 0}
+    
+    return {
+        "files": files,
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "storage": {
+            "total_size": storage_stats.get("total_size", 0),
+            "total_files": storage_stats.get("total_files", 0)
+        }
+    }
+
+@api_router.post("/admin/media/upload")
+async def admin_upload_media(
+    file: UploadFile,
+    admin: dict = Depends(require_admin)
+):
+    """Upload a media file (admin)"""
+    # Generate unique filename
+    ext = file.filename.split('.')[-1] if '.' in file.filename else 'bin'
+    unique_filename = f"admin/{str(uuid.uuid4())}.{ext}"
+    
+    # Read file content
+    content = await file.read()
+    file_size = len(content)
+    
+    # Save to storage (using local storage or object storage)
+    file_path = f"/app/backend/uploads/{unique_filename}"
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    
+    with open(file_path, 'wb') as f:
+        f.write(content)
+    
+    # Save metadata to database
+    media_doc = {
+        "id": str(uuid.uuid4()),
+        "filename": file.filename,
+        "path": unique_filename,
+        "content_type": file.content_type or "application/octet-stream",
+        "type": file.content_type.split('/')[0] if file.content_type else "file",
+        "size": file_size,
+        "uploaded_by": admin["id"],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.media_files.insert_one(media_doc)
+    
+    return {
+        "success": True,
+        "file": {k: v for k, v in media_doc.items() if k != "_id"}
+    }
+
+@api_router.delete("/admin/media/{file_id}")
+async def admin_delete_media(file_id: str, admin: dict = Depends(require_admin)):
+    """Delete a media file"""
+    # Find the file
+    file_doc = await db.media_files.find_one({"id": file_id})
+    if not file_doc:
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Delete from storage
+    file_path = f"/app/backend/uploads/{file_doc.get('path', '')}"
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    
+    # Delete from database
+    await db.media_files.delete_one({"id": file_id})
+    
+    return {"success": True}
+
+@api_router.get("/admin/media/stats")
+async def admin_media_stats(admin: dict = Depends(require_admin)):
+    """Get media storage statistics"""
+    pipeline = [
+        {"$group": {
+            "_id": "$type",
+            "count": {"$sum": 1},
+            "total_size": {"$sum": "$size"}
+        }}
+    ]
+    
+    stats = await db.media_files.aggregate(pipeline).to_list(10)
+    
+    total_size = sum(s.get("total_size", 0) for s in stats)
+    total_files = sum(s.get("count", 0) for s in stats)
+    
+    return {
+        "by_type": {s["_id"]: {"count": s["count"], "size": s["total_size"]} for s in stats if s["_id"]},
+        "total_size": total_size,
+        "total_files": total_files
+    }
+
 # ==================== SETTINGS ====================
 
 @api_router.get("/admin/settings")
@@ -1727,6 +1923,132 @@ async def seed_initial_data():
         })
     
     logger.info("Initial data seeded with all Cyprus cities and new service types")
+
+# ==================== WEBSOCKET ENDPOINTS ====================
+
+async def verify_ws_token(token: str) -> Optional[dict]:
+    """Verify JWT token for WebSocket connections"""
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        user = await db.users.find_one({"id": payload["user_id"]}, {"_id": 0, "password": 0})
+        return user
+    except:
+        return None
+
+@app.websocket("/ws/chat/{token}")
+async def websocket_chat(websocket: WebSocket, token: str):
+    """WebSocket endpoint for real-time chat"""
+    # Verify token
+    user = await verify_ws_token(token)
+    if not user:
+        await websocket.close(code=4001, reason="Invalid token")
+        return
+    
+    user_id = user["id"]
+    await ws_manager.connect(websocket, user_id)
+    
+    try:
+        while True:
+            # Receive message from client
+            data = await websocket.receive_json()
+            
+            if data.get("type") == "ping":
+                # Respond to ping with pong
+                await websocket.send_json({"type": "pong"})
+                
+            elif data.get("type") == "typing":
+                # Broadcast typing indicator
+                receiver_id = data.get("receiver_id")
+                if receiver_id:
+                    await ws_manager.send_personal_message({
+                        "type": "typing",
+                        "sender_id": user_id,
+                        "conversation_id": data.get("conversation_id")
+                    }, receiver_id)
+                    
+            elif data.get("type") == "read":
+                # Mark messages as read
+                message_ids = data.get("message_ids", [])
+                if message_ids:
+                    await db.messages.update_many(
+                        {"id": {"$in": message_ids}, "receiver_id": user_id},
+                        {"$set": {"status": "read"}}
+                    )
+                    # Notify sender that messages were read
+                    sender_id = data.get("sender_id")
+                    if sender_id:
+                        await ws_manager.send_personal_message({
+                            "type": "messages_read",
+                            "message_ids": message_ids,
+                            "reader_id": user_id
+                        }, sender_id)
+                        
+            elif data.get("type") == "message":
+                # Handle direct message via WebSocket
+                receiver_id = data.get("receiver_id")
+                content = data.get("content", "").strip()
+                
+                if receiver_id and content:
+                    # Find or create conversation
+                    conversation = await db.conversations.find_one({
+                        "$or": [
+                            {"participants": [user_id, receiver_id]},
+                            {"participants": [receiver_id, user_id]}
+                        ]
+                    }, {"_id": 0})
+                    
+                    if not conversation:
+                        conversation = {
+                            "id": str(uuid.uuid4()),
+                            "participants": [user_id, receiver_id],
+                            "last_message": None,
+                            "last_message_at": None,
+                            "created_at": datetime.now(timezone.utc).isoformat()
+                        }
+                        await db.conversations.insert_one(conversation)
+                    
+                    # Create message
+                    message = {
+                        "id": str(uuid.uuid4()),
+                        "conversation_id": conversation["id"],
+                        "sender_id": user_id,
+                        "receiver_id": receiver_id,
+                        "content": content,
+                        "status": "sent",
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    await db.messages.insert_one(message)
+                    
+                    # Update conversation
+                    await db.conversations.update_one(
+                        {"id": conversation["id"]},
+                        {"$set": {
+                            "last_message": content[:100],
+                            "last_message_at": message["created_at"]
+                        }}
+                    )
+                    
+                    # Send confirmation to sender
+                    await websocket.send_json({
+                        "type": "message_sent",
+                        "message": {k: v for k, v in message.items() if k != "_id"}
+                    })
+                    
+                    # Send message to receiver
+                    await ws_manager.send_personal_message({
+                        "type": "new_message",
+                        "message": {k: v for k, v in message.items() if k != "_id"},
+                        "sender": {
+                            "id": user_id,
+                            "name": user.get("name", user.get("email", "").split("@")[0])
+                        }
+                    }, receiver_id)
+                    
+    except WebSocketDisconnect:
+        ws_manager.disconnect(websocket, user_id)
+    except Exception as e:
+        logger.error(f"WebSocket error for user {user_id}: {e}")
+        ws_manager.disconnect(websocket, user_id)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
