@@ -34,9 +34,11 @@ const AdminPartners = () => {
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [realStats, setRealStats] = useState({ total: 0, active: 0, verified: 0, inactive: 0 });
 
   useEffect(() => {
     fetchPartners();
+    fetchPartnerStats();
   }, [page, statusFilter]);
 
   const fetchPartners = async () => {
@@ -56,6 +58,23 @@ const AdminPartners = () => {
       console.error('Failed to fetch partners:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPartnerStats = async () => {
+    try {
+      // Get all partners to calculate real stats
+      const allPartnersRes = await api.get('/admin/users?role=partner&limit=1000');
+      const allPartners = allPartnersRes.data.users || [];
+      
+      setRealStats({
+        total: allPartners.length,
+        active: allPartners.filter(p => p.is_active !== false).length,
+        verified: allPartners.filter(p => p.is_verified === true).length,
+        inactive: allPartners.filter(p => p.is_active === false).length,
+      });
+    } catch (error) {
+      console.error('Failed to fetch partner stats:', error);
     }
   };
 
@@ -91,12 +110,7 @@ const AdminPartners = () => {
 
   const totalPages = Math.ceil(total / 20);
 
-  const stats = {
-    total: total,
-    active: partners.filter(p => p.is_active).length,
-    verified: partners.filter(p => p.is_verified).length,
-    inactive: partners.filter(p => !p.is_active).length,
-  };
+  const stats = realStats;
 
   return (
     <div data-testid="admin-partners">

@@ -1294,6 +1294,8 @@ async def stripe_webhook(request: Request):
 async def admin_dashboard(admin: dict = Depends(require_admin)):
     total_users = await db.users.count_documents({"role": "user"})
     total_partners = await db.users.count_documents({"role": "partner"})
+    active_partners = await db.users.count_documents({"role": "partner", "is_active": {"$ne": False}})
+    verified_partners = await db.users.count_documents({"role": "partner", "is_verified": True})
     pending_profiles = await db.partner_profiles.count_documents({"status": "pending"})
     approved_profiles = await db.partner_profiles.count_documents({"status": "approved"})
     vitrin_profiles = await db.partner_profiles.count_documents({"is_vitrin": True})
@@ -1304,6 +1306,8 @@ async def admin_dashboard(admin: dict = Depends(require_admin)):
     return {
         "total_users": total_users,
         "total_partners": total_partners,
+        "active_partners": active_partners,
+        "verified_partners": verified_partners,
         "pending_profiles": pending_profiles,
         "approved_profiles": approved_profiles,
         "vitrin_profiles": vitrin_profiles,

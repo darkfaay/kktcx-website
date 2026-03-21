@@ -61,12 +61,12 @@ const AdminDashboard = () => {
     },
     { 
       label: 'Aktif Partner', 
-      value: stats?.total_partners || 0, 
+      value: stats?.active_partners || 0, 
       icon: UserCheck, 
       color: 'from-purple-500 to-purple-600',
       bgColor: 'bg-purple-500/10',
-      change: '+8%',
-      changeUp: true
+      change: `${stats?.total_partners || 0} toplam`,
+      changeUp: null
     },
     { 
       label: 'Onay Bekleyen', 

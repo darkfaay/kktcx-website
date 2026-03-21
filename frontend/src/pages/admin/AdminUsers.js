@@ -32,9 +32,11 @@ const AdminUsers = () => {
   const [total, setTotal] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'grid'
+  const [allStats, setAllStats] = useState({ total: 0, partners: 0, admins: 0, active: 0 });
 
   useEffect(() => {
     fetchUsers();
+    fetchAllStats();
   }, [page]);
 
   const fetchUsers = async () => {
@@ -53,6 +55,22 @@ const AdminUsers = () => {
       console.error('Failed to fetch users:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAllStats = async () => {
+    try {
+      // Get dashboard stats for accurate counts
+      const dashRes = await api.get('/admin/dashboard');
+      const stats = dashRes.data;
+      setAllStats({
+        total: (stats.total_users || 0) + (stats.total_partners || 0),
+        partners: stats.total_partners || 0,
+        admins: 1, // Usually 1 admin
+        active: stats.total_users || 0
+      });
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
     }
   };
 
@@ -97,10 +115,10 @@ const AdminUsers = () => {
   };
 
   const stats = {
-    total: total,
-    partners: users.filter(u => u.role === 'partner').length,
-    admins: users.filter(u => u.role === 'admin').length,
-    active: users.filter(u => u.is_active !== false).length,
+    total: allStats.total,
+    partners: allStats.partners,
+    admins: allStats.admins,
+    active: total, // Normal kullanıcı sayısı
   };
 
   return (
