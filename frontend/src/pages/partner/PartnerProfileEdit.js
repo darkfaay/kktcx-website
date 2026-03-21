@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, useLanguage } from '../../context/AppContext';
-import { Save, Send, MapPin, Calendar, Globe, Tag, User } from 'lucide-react';
+import { Save, Send, MapPin, Calendar, Globe, Tag, User, Heart, Sparkles, Phone } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
@@ -18,6 +18,50 @@ import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
+const serviceTypeOptions = [
+  { value: 'escort', label: 'Eskort' },
+  { value: 'gigolo', label: 'Jigolo' },
+  { value: 'masseuse', label: 'Masöz' },
+  { value: 'companion', label: 'Eşlik' },
+];
+
+const orientationOptions = [
+  { value: 'heterosexual', label: 'Heteroseksüel' },
+  { value: 'lesbian', label: 'Lezbiyen' },
+  { value: 'gay', label: 'Gay' },
+  { value: 'bisexual', label: 'Biseksüel' },
+  { value: 'trans', label: 'Trans' },
+];
+
+const genderOptions = [
+  { value: 'female', label: 'Kadın' },
+  { value: 'male', label: 'Erkek' },
+  { value: 'trans', label: 'Trans' },
+];
+
+const bodyTypeOptions = [
+  { value: 'slim', label: 'İnce' },
+  { value: 'athletic', label: 'Atletik' },
+  { value: 'curvy', label: 'Dolgun' },
+  { value: 'plus-size', label: 'Büyük Beden' },
+];
+
+const hairColorOptions = [
+  { value: 'black', label: 'Siyah' },
+  { value: 'brown', label: 'Kahverengi' },
+  { value: 'blonde', label: 'Sarı' },
+  { value: 'red', label: 'Kızıl' },
+  { value: 'other', label: 'Diğer' },
+];
+
+const eyeColorOptions = [
+  { value: 'brown', label: 'Kahverengi' },
+  { value: 'blue', label: 'Mavi' },
+  { value: 'green', label: 'Yeşil' },
+  { value: 'hazel', label: 'Ela' },
+  { value: 'other', label: 'Diğer' },
+];
+
 const PartnerProfileEdit = () => {
   const { user, api } = useAuth();
   const { lang, t } = useLanguage();
@@ -33,12 +77,24 @@ const PartnerProfileEdit = () => {
   const [formData, setFormData] = useState({
     nickname: '',
     age: '',
+    gender: 'female',
     city_id: '',
     district_id: '',
     languages: [],
     category_ids: [],
+    service_types: [],
+    orientations: [],
+    body_type: '',
+    height: '',
+    hair_color: '',
+    eye_color: '',
     short_description: '',
     detailed_description: '',
+    hourly_rate: '',
+    incall: false,
+    outcall: false,
+    whatsapp: '',
+    telegram: '',
     is_available_today: false,
     is_available_tonight: false
   });
@@ -78,12 +134,24 @@ const PartnerProfileEdit = () => {
         setFormData({
           nickname: profileRes.data.nickname || '',
           age: profileRes.data.age || '',
+          gender: profileRes.data.gender || 'female',
           city_id: profileRes.data.city_id || '',
           district_id: profileRes.data.district_id || '',
           languages: profileRes.data.languages || [],
           category_ids: profileRes.data.category_ids || [],
+          service_types: profileRes.data.service_types || [],
+          orientations: profileRes.data.orientations || [],
+          body_type: profileRes.data.body_type || '',
+          height: profileRes.data.height || '',
+          hair_color: profileRes.data.hair_color || '',
+          eye_color: profileRes.data.eye_color || '',
           short_description: profileRes.data.short_description || '',
           detailed_description: profileRes.data.detailed_description || '',
+          hourly_rate: profileRes.data.hourly_rate || '',
+          incall: profileRes.data.incall || false,
+          outcall: profileRes.data.outcall || false,
+          whatsapp: profileRes.data.whatsapp || '',
+          telegram: profileRes.data.telegram || '',
           is_available_today: profileRes.data.is_available_today || false,
           is_available_tonight: profileRes.data.is_available_tonight || false
         });
@@ -114,21 +182,12 @@ const PartnerProfileEdit = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const toggleLanguage = (language) => {
+  const toggleArrayItem = (field, item) => {
     setFormData(prev => ({
       ...prev,
-      languages: prev.languages.includes(language)
-        ? prev.languages.filter(l => l !== language)
-        : [...prev.languages, language]
-    }));
-  };
-
-  const toggleCategory = (categoryId) => {
-    setFormData(prev => ({
-      ...prev,
-      category_ids: prev.category_ids.includes(categoryId)
-        ? prev.category_ids.filter(c => c !== categoryId)
-        : [...prev.category_ids, categoryId]
+      [field]: prev[field].includes(item)
+        ? prev[field].filter(i => i !== item)
+        : [...prev[field], item]
     }));
   };
 
@@ -140,11 +199,18 @@ const PartnerProfileEdit = () => {
 
     setSaving(true);
     try {
+      const dataToSend = {
+        ...formData,
+        age: parseInt(formData.age),
+        height: formData.height ? parseInt(formData.height) : null,
+        hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
+      };
+
       if (profile) {
-        await api.put('/partner/profile', formData);
+        await api.put('/partner/profile', dataToSend);
         toast.success('Profil güncellendi');
       } else {
-        await api.post('/partner/profile', formData);
+        await api.post('/partner/profile', dataToSend);
         toast.success('Profil oluşturuldu');
       }
       navigate(`/${lang}/partner`);
@@ -163,11 +229,18 @@ const PartnerProfileEdit = () => {
 
     setSaving(true);
     try {
+      const dataToSend = {
+        ...formData,
+        age: parseInt(formData.age),
+        height: formData.height ? parseInt(formData.height) : null,
+        hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
+      };
+
       // First save
       if (profile) {
-        await api.put('/partner/profile', formData);
+        await api.put('/partner/profile', dataToSend);
       } else {
-        await api.post('/partner/profile', formData);
+        await api.post('/partner/profile', dataToSend);
       }
       
       // Then submit for review
@@ -184,7 +257,7 @@ const PartnerProfileEdit = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="animate-spin w-8 h-8 border-2 border-[#D4AF37] border-t-transparent rounded-full"></div>
+        <div className="animate-spin w-8 h-8 border-2 border-[#E91E63] border-t-transparent rounded-full"></div>
       </div>
     );
   }
@@ -204,11 +277,11 @@ const PartnerProfileEdit = () => {
         {/* Basic Info */}
         <div className="glass rounded-xl p-6">
           <h3 className="text-white font-semibold mb-6 flex items-center gap-2">
-            <User className="w-5 h-5 text-[#D4AF37]" />
+            <User className="w-5 h-5 text-[#E91E63]" />
             Temel Bilgiler
           </h3>
           
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-3 gap-6">
             <div>
               <label className="text-white/70 text-sm mb-2 block">{t('nickname')} *</label>
               <Input
@@ -225,7 +298,7 @@ const PartnerProfileEdit = () => {
               <Input
                 type="number"
                 value={formData.age}
-                onChange={(e) => handleChange('age', parseInt(e.target.value) || '')}
+                onChange={(e) => handleChange('age', e.target.value)}
                 placeholder="Yaşınız"
                 min={18}
                 max={99}
@@ -233,13 +306,154 @@ const PartnerProfileEdit = () => {
                 data-testid="profile-age"
               />
             </div>
+
+            <div>
+              <label className="text-white/70 text-sm mb-2 block">Cinsiyet *</label>
+              <Select value={formData.gender} onValueChange={(v) => handleChange('gender', v)}>
+                <SelectTrigger className="input-glass" data-testid="profile-gender">
+                  <SelectValue placeholder="Seçin" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
+                  {genderOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {/* Service Types & Orientations */}
+        <div className="glass rounded-xl p-6">
+          <h3 className="text-white font-semibold mb-6 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-[#E91E63]" />
+            Hizmet Türü & Yönelim
+          </h3>
+          
+          <div className="space-y-6">
+            <div>
+              <label className="text-white/70 text-sm mb-3 block">Hizmet Türleri *</label>
+              <div className="flex flex-wrap gap-3">
+                {serviceTypeOptions.map((opt) => (
+                  <label
+                    key={opt.value}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all ${
+                      formData.service_types.includes(opt.value)
+                        ? 'bg-[#E91E63] text-white'
+                        : 'bg-white/10 text-white/70 hover:bg-white/20'
+                    }`}
+                    data-testid={`service-${opt.value}`}
+                  >
+                    <Checkbox
+                      checked={formData.service_types.includes(opt.value)}
+                      onCheckedChange={() => toggleArrayItem('service_types', opt.value)}
+                      className="hidden"
+                    />
+                    {opt.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-white/70 text-sm mb-3 block">Cinsel Yönelim</label>
+              <div className="flex flex-wrap gap-3">
+                {orientationOptions.map((opt) => (
+                  <label
+                    key={opt.value}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all ${
+                      formData.orientations.includes(opt.value)
+                        ? 'bg-[#9C27B0] text-white'
+                        : 'bg-white/10 text-white/70 hover:bg-white/20'
+                    }`}
+                    data-testid={`orientation-${opt.value}`}
+                  >
+                    <Checkbox
+                      checked={formData.orientations.includes(opt.value)}
+                      onCheckedChange={() => toggleArrayItem('orientations', opt.value)}
+                      className="hidden"
+                    />
+                    {opt.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Physical Attributes */}
+        <div className="glass rounded-xl p-6">
+          <h3 className="text-white font-semibold mb-6 flex items-center gap-2">
+            <Heart className="w-5 h-5 text-[#E91E63]" />
+            Fiziksel Özellikler
+          </h3>
+          
+          <div className="grid md:grid-cols-4 gap-6">
+            <div>
+              <label className="text-white/70 text-sm mb-2 block">Vücut Tipi</label>
+              <Select value={formData.body_type || "none"} onValueChange={(v) => handleChange('body_type', v === "none" ? "" : v)}>
+                <SelectTrigger className="input-glass" data-testid="profile-body-type">
+                  <SelectValue placeholder="Seçin" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
+                  <SelectItem value="none">Seçin</SelectItem>
+                  {bodyTypeOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-white/70 text-sm mb-2 block">Boy (cm)</label>
+              <Input
+                type="number"
+                value={formData.height}
+                onChange={(e) => handleChange('height', e.target.value)}
+                placeholder="170"
+                min={140}
+                max={220}
+                className="input-glass"
+                data-testid="profile-height"
+              />
+            </div>
+
+            <div>
+              <label className="text-white/70 text-sm mb-2 block">Saç Rengi</label>
+              <Select value={formData.hair_color || "none"} onValueChange={(v) => handleChange('hair_color', v === "none" ? "" : v)}>
+                <SelectTrigger className="input-glass" data-testid="profile-hair">
+                  <SelectValue placeholder="Seçin" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
+                  <SelectItem value="none">Seçin</SelectItem>
+                  {hairColorOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-white/70 text-sm mb-2 block">Göz Rengi</label>
+              <Select value={formData.eye_color || "none"} onValueChange={(v) => handleChange('eye_color', v === "none" ? "" : v)}>
+                <SelectTrigger className="input-glass" data-testid="profile-eyes">
+                  <SelectValue placeholder="Seçin" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
+                  <SelectItem value="none">Seçin</SelectItem>
+                  {eyeColorOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
         {/* Location */}
         <div className="glass rounded-xl p-6">
           <h3 className="text-white font-semibold mb-6 flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-[#D4AF37]" />
+            <MapPin className="w-5 h-5 text-[#E91E63]" />
             Konum
           </h3>
           
@@ -247,13 +461,14 @@ const PartnerProfileEdit = () => {
             <div>
               <label className="text-white/70 text-sm mb-2 block">{t('city')} *</label>
               <Select 
-                value={formData.city_id} 
-                onValueChange={(v) => handleChange('city_id', v)}
+                value={formData.city_id || "none"} 
+                onValueChange={(v) => handleChange('city_id', v === "none" ? "" : v)}
               >
                 <SelectTrigger className="input-glass" data-testid="profile-city">
                   <SelectValue placeholder="Şehir seçin" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#0F0F10] border-white/10">
+                <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
+                  <SelectItem value="none">Şehir seçin</SelectItem>
                   {cities.map((city) => (
                     <SelectItem key={city.id} value={city.id}>{city.name}</SelectItem>
                   ))}
@@ -264,14 +479,15 @@ const PartnerProfileEdit = () => {
             <div>
               <label className="text-white/70 text-sm mb-2 block">Bölge</label>
               <Select 
-                value={formData.district_id} 
-                onValueChange={(v) => handleChange('district_id', v)}
+                value={formData.district_id || "none"} 
+                onValueChange={(v) => handleChange('district_id', v === "none" ? "" : v)}
                 disabled={!formData.city_id || districts.length === 0}
               >
                 <SelectTrigger className="input-glass" data-testid="profile-district">
                   <SelectValue placeholder="Bölge seçin" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#0F0F10] border-white/10">
+                <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
+                  <SelectItem value="none">Bölge seçin</SelectItem>
                   {districts.map((district) => (
                     <SelectItem key={district.id} value={district.id}>{district.name}</SelectItem>
                   ))}
@@ -281,10 +497,83 @@ const PartnerProfileEdit = () => {
           </div>
         </div>
 
+        {/* Pricing & Service Type */}
+        <div className="glass rounded-xl p-6">
+          <h3 className="text-white font-semibold mb-6 flex items-center gap-2">
+            <Tag className="w-5 h-5 text-[#E91E63]" />
+            Fiyat & Hizmet Yeri
+          </h3>
+          
+          <div className="grid md:grid-cols-3 gap-6">
+            <div>
+              <label className="text-white/70 text-sm mb-2 block">Saatlik Ücret ($)</label>
+              <Input
+                type="number"
+                value={formData.hourly_rate}
+                onChange={(e) => handleChange('hourly_rate', e.target.value)}
+                placeholder="100"
+                min={0}
+                className="input-glass"
+                data-testid="profile-rate"
+              />
+            </div>
+
+            <div className="flex items-center gap-4 pt-6">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <Checkbox
+                  checked={formData.incall}
+                  onCheckedChange={(v) => handleChange('incall', v)}
+                  data-testid="profile-incall"
+                />
+                <span className="text-white/70">Ev (Incall)</span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <Checkbox
+                  checked={formData.outcall}
+                  onCheckedChange={(v) => handleChange('outcall', v)}
+                  data-testid="profile-outcall"
+                />
+                <span className="text-white/70">Dışarı (Outcall)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Contact Info */}
+        <div className="glass rounded-xl p-6">
+          <h3 className="text-white font-semibold mb-6 flex items-center gap-2">
+            <Phone className="w-5 h-5 text-[#E91E63]" />
+            İletişim (Opsiyonel)
+          </h3>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <label className="text-white/70 text-sm mb-2 block">WhatsApp</label>
+              <Input
+                value={formData.whatsapp}
+                onChange={(e) => handleChange('whatsapp', e.target.value)}
+                placeholder="+90 5XX XXX XX XX"
+                className="input-glass"
+                data-testid="profile-whatsapp"
+              />
+            </div>
+            <div>
+              <label className="text-white/70 text-sm mb-2 block">Telegram</label>
+              <Input
+                value={formData.telegram}
+                onChange={(e) => handleChange('telegram', e.target.value)}
+                placeholder="@username"
+                className="input-glass"
+                data-testid="profile-telegram"
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Languages */}
         <div className="glass rounded-xl p-6">
           <h3 className="text-white font-semibold mb-6 flex items-center gap-2">
-            <Globe className="w-5 h-5 text-[#D4AF37]" />
+            <Globe className="w-5 h-5 text-[#E91E63]" />
             Konuştuğunuz Diller
           </h3>
           
@@ -294,13 +583,13 @@ const PartnerProfileEdit = () => {
                 key={lng.value}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all ${
                   formData.languages.includes(lng.value)
-                    ? 'bg-[#D4AF37] text-black'
+                    ? 'bg-[#E91E63] text-white'
                     : 'bg-white/10 text-white/70 hover:bg-white/20'
                 }`}
               >
                 <Checkbox
                   checked={formData.languages.includes(lng.value)}
-                  onCheckedChange={() => toggleLanguage(lng.value)}
+                  onCheckedChange={() => toggleArrayItem('languages', lng.value)}
                   className="hidden"
                 />
                 {lng.label}
@@ -312,7 +601,7 @@ const PartnerProfileEdit = () => {
         {/* Categories */}
         <div className="glass rounded-xl p-6">
           <h3 className="text-white font-semibold mb-6 flex items-center gap-2">
-            <Tag className="w-5 h-5 text-[#D4AF37]" />
+            <Tag className="w-5 h-5 text-[#E91E63]" />
             Hizmet Kategorileri
           </h3>
           
@@ -322,13 +611,13 @@ const PartnerProfileEdit = () => {
                 key={cat.id}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer transition-all ${
                   formData.category_ids.includes(cat.id)
-                    ? 'bg-[#D4AF37] text-black'
+                    ? 'bg-[#E91E63] text-white'
                     : 'bg-white/10 text-white/70 hover:bg-white/20'
                 }`}
               >
                 <Checkbox
                   checked={formData.category_ids.includes(cat.id)}
-                  onCheckedChange={() => toggleCategory(cat.id)}
+                  onCheckedChange={() => toggleArrayItem('category_ids', cat.id)}
                   className="hidden"
                 />
                 {cat.name}
@@ -340,7 +629,7 @@ const PartnerProfileEdit = () => {
         {/* Availability */}
         <div className="glass rounded-xl p-6">
           <h3 className="text-white font-semibold mb-6 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-[#D4AF37]" />
+            <Calendar className="w-5 h-5 text-[#E91E63]" />
             Müsaitlik
           </h3>
           

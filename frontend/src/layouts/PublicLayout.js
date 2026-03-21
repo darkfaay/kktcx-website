@@ -32,14 +32,15 @@ const PublicLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] flex flex-col">
+    <div className="min-h-screen bg-[#0A0A0F] flex flex-col">
       {/* Desktop Header */}
       <header className="hidden md:block fixed top-0 left-0 right-0 z-50 glass-dark">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
             <Link to={`/${lang}`} className="flex items-center gap-2" data-testid="logo-link">
-              <span className="text-2xl font-bold gold-text font-serif">KKTCX</span>
+              <span className="text-2xl font-bold gradient-text font-serif">KKTCX</span>
+              <span className="text-xs px-2 py-0.5 rounded bg-[#E91E63]/20 text-[#FF6090]">18+</span>
             </Link>
 
             {/* Navigation */}

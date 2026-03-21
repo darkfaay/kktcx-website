@@ -126,11 +126,23 @@ class PartnerProfileCreate(BaseModel):
     district_id: Optional[str] = None
     languages: List[str] = []
     category_ids: List[str] = []
+    service_types: List[str] = []  # escort, gigolo, masseuse, companion
+    orientations: List[str] = []  # heterosexual, lesbian, gay, bisexual, trans
+    gender: str = "female"  # female, male, trans
+    body_type: Optional[str] = None  # slim, athletic, curvy, plus-size
+    height: Optional[int] = None
+    hair_color: Optional[str] = None
+    eye_color: Optional[str] = None
     short_description: str
     detailed_description: str
     availability: Dict[str, Any] = {}
     is_available_today: bool = False
     is_available_tonight: bool = False
+    hourly_rate: Optional[float] = None
+    incall: bool = False
+    outcall: bool = False
+    whatsapp: Optional[str] = None
+    telegram: Optional[str] = None
 
 class PartnerProfileUpdate(BaseModel):
     nickname: Optional[str] = None
@@ -139,11 +151,23 @@ class PartnerProfileUpdate(BaseModel):
     district_id: Optional[str] = None
     languages: Optional[List[str]] = None
     category_ids: Optional[List[str]] = None
+    service_types: Optional[List[str]] = None
+    orientations: Optional[List[str]] = None
+    gender: Optional[str] = None
+    body_type: Optional[str] = None
+    height: Optional[int] = None
+    hair_color: Optional[str] = None
+    eye_color: Optional[str] = None
     short_description: Optional[str] = None
     detailed_description: Optional[str] = None
     availability: Optional[Dict[str, Any]] = None
     is_available_today: Optional[bool] = None
     is_available_tonight: Optional[bool] = None
+    hourly_rate: Optional[float] = None
+    incall: Optional[bool] = None
+    outcall: Optional[bool] = None
+    whatsapp: Optional[str] = None
+    telegram: Optional[str] = None
 
 class MessageCreate(BaseModel):
     receiver_id: str
@@ -477,16 +501,30 @@ async def create_partner_profile(data: PartnerProfileCreate, user: dict = Depend
         "district_id": data.district_id,
         "languages": data.languages,
         "category_ids": data.category_ids,
+        "service_types": data.service_types,
+        "orientations": data.orientations,
+        "gender": data.gender,
+        "body_type": data.body_type,
+        "height": data.height,
+        "hair_color": data.hair_color,
+        "eye_color": data.eye_color,
         "short_description": data.short_description,
         "detailed_description": data.detailed_description,
         "availability": data.availability,
         "is_available_today": data.is_available_today,
         "is_available_tonight": data.is_available_tonight,
+        "hourly_rate": data.hourly_rate,
+        "incall": data.incall,
+        "outcall": data.outcall,
+        "whatsapp": data.whatsapp,
+        "telegram": data.telegram,
         "slug": slug,
         "status": "draft",  # draft, pending, approved, rejected, inactive, expired
         "is_verified": False,
         "is_featured": False,
         "is_vitrin": False,
+        "is_homepage_vitrin": False,  # New: For homepage premium showcase
+        "is_city_vitrin": False,  # New: For city page premium showcase
         "package_type": "standard",
         "package_expires_at": None,
         "priority_score": 0,
@@ -549,6 +587,7 @@ async def submit_for_review(user: dict = Depends(require_partner)):
 async def upload_partner_image(
     file: UploadFile = File(...),
     is_cover: bool = False,
+    is_blurred: bool = False,
     user: dict = Depends(require_partner)
 ):
     profile = await db.partner_profiles.find_one({"user_id": user["id"]})
@@ -573,7 +612,7 @@ async def upload_partner_image(
     # Upload to storage
     result = put_object(path, data, file.content_type)
     
-    # Create image record
+    # Create image record with blur support
     image_record = {
         "id": image_id,
         "path": result["path"],
@@ -581,6 +620,7 @@ async def upload_partner_image(
         "content_type": file.content_type,
         "size": result.get("size", len(data)),
         "is_cover": is_cover,
+        "is_blurred": is_blurred,  # New field for blur feature
         "order": len(profile.get("images", [])),
         "created_at": datetime.now(timezone.utc).isoformat()
     }
@@ -619,6 +659,66 @@ async def delete_partner_image(image_id: str, user: dict = Depends(require_partn
     await db.partner_profiles.update_one({"user_id": user["id"]}, update_ops)
     return {"success": True}
 
+@api_router.put("/partner/images/{image_id}/blur")
+async def toggle_image_blur(image_id: str, is_blurred: bool, user: dict = Depends(require_partner)):
+    """Toggle blur status of an image"""
+    profile = await db.partner_profiles.find_one({"user_id": user["id"]})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    
+    # Find and update image blur status
+    images = profile.get("images", [])
+    updated = False
+    for img in images:
+        if img["id"] == image_id:
+            img["is_blurred"] = is_blurred
+            updated = True
+            break
+    
+    if not updated:
+        raise HTTPException(status_code=404, detail="Image not found")
+    
+    # Update cover image if it's the same
+    cover_image = profile.get("cover_image")
+    if cover_image and cover_image.get("id") == image_id:
+        cover_image["is_blurred"] = is_blurred
+        await db.partner_profiles.update_one(
+            {"user_id": user["id"]},
+            {"$set": {"images": images, "cover_image": cover_image}}
+        )
+    else:
+        await db.partner_profiles.update_one(
+            {"user_id": user["id"]},
+            {"$set": {"images": images}}
+        )
+    
+    return {"success": True}
+
+@api_router.put("/partner/images/{image_id}/cover")
+async def set_image_as_cover(image_id: str, user: dict = Depends(require_partner)):
+    """Set an image as cover photo"""
+    profile = await db.partner_profiles.find_one({"user_id": user["id"]})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    
+    # Find the image
+    images = profile.get("images", [])
+    cover_image = None
+    for img in images:
+        img["is_cover"] = img["id"] == image_id
+        if img["id"] == image_id:
+            cover_image = img
+    
+    if not cover_image:
+        raise HTTPException(status_code=404, detail="Image not found")
+    
+    await db.partner_profiles.update_one(
+        {"user_id": user["id"]},
+        {"$set": {"images": images, "cover_image": cover_image}}
+    )
+    
+    return {"success": True}
+
 # ==================== PUBLIC PARTNER LISTINGS ====================
 
 @api_router.get("/partners")
@@ -626,6 +726,9 @@ async def list_partners(
     city_id: Optional[str] = None,
     district_id: Optional[str] = None,
     category_id: Optional[str] = None,
+    service_type: Optional[str] = None,
+    orientation: Optional[str] = None,
+    gender: Optional[str] = None,
     min_age: Optional[int] = None,
     max_age: Optional[int] = None,
     language: Optional[str] = None,
@@ -633,6 +736,8 @@ async def list_partners(
     available_tonight: Optional[bool] = None,
     featured_only: Optional[bool] = None,
     verified_only: Optional[bool] = None,
+    incall: Optional[bool] = None,
+    outcall: Optional[bool] = None,
     sort_by: str = "recommended",
     page: int = 1,
     limit: int = 20,
@@ -647,6 +752,12 @@ async def list_partners(
         query["district_id"] = district_id
     if category_id:
         query["category_ids"] = category_id
+    if service_type:
+        query["service_types"] = service_type
+    if orientation:
+        query["orientations"] = orientation
+    if gender:
+        query["gender"] = gender
     if min_age:
         query["age"] = {"$gte": min_age}
     if max_age:
@@ -661,6 +772,10 @@ async def list_partners(
         query["is_featured"] = True
     if verified_only:
         query["is_verified"] = True
+    if incall:
+        query["incall"] = True
+    if outcall:
+        query["outcall"] = True
     
     # Build sort
     sort_options = {
@@ -1208,6 +1323,24 @@ async def admin_toggle_featured(profile_id: str, is_featured: bool, admin: dict 
     )
     return {"success": True}
 
+@api_router.put("/admin/profiles/{profile_id}/homepage-vitrin")
+async def admin_toggle_homepage_vitrin(profile_id: str, is_homepage_vitrin: bool, admin: dict = Depends(require_admin)):
+    """Toggle homepage premium vitrin status"""
+    await db.partner_profiles.update_one(
+        {"id": profile_id},
+        {"$set": {"is_homepage_vitrin": is_homepage_vitrin, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"success": True}
+
+@api_router.put("/admin/profiles/{profile_id}/city-vitrin")
+async def admin_toggle_city_vitrin(profile_id: str, is_city_vitrin: bool, admin: dict = Depends(require_admin)):
+    """Toggle city page premium vitrin status"""
+    await db.partner_profiles.update_one(
+        {"id": profile_id},
+        {"$set": {"is_city_vitrin": is_city_vitrin, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"success": True}
+
 # ==================== SETTINGS ====================
 
 @api_router.get("/admin/settings")
@@ -1289,7 +1422,13 @@ async def update_seo(
 
 @api_router.get("/homepage")
 async def get_homepage_data(lang: str = "tr"):
-    # Get vitrin profiles
+    # Get homepage vitrin profiles (Premium - Highest tier)
+    homepage_vitrin = await db.partner_profiles.find(
+        {"status": "approved", "is_homepage_vitrin": True},
+        {"_id": 0}
+    ).sort("priority_score", -1).limit(4).to_list(4)
+    
+    # Get regular vitrin profiles
     vitrin_profiles = await db.partner_profiles.find(
         {"status": "approved", "is_vitrin": True},
         {"_id": 0}
@@ -1307,6 +1446,12 @@ async def get_homepage_data(lang: str = "tr"):
         {"_id": 0}
     ).sort("priority_score", -1).limit(8).to_list(8)
     
+    # Get new profiles (recently approved)
+    new_profiles = await db.partner_profiles.find(
+        {"status": "approved"},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(8).to_list(8)
+    
     # Get cities with partner counts
     cities = await db.cities.find({}, {"_id": 0}).to_list(100)
     for city in cities:
@@ -1314,12 +1459,22 @@ async def get_homepage_data(lang: str = "tr"):
         city["partner_count"] = await db.partner_profiles.count_documents(
             {"city_id": city["id"], "status": "approved"}
         )
+        # Get city vitrin profiles
+        city["vitrin_profiles"] = await db.partner_profiles.find(
+            {"city_id": city["id"], "status": "approved", "is_city_vitrin": True},
+            {"_id": 0}
+        ).sort("priority_score", -1).limit(4).to_list(4)
     
     # Enrich profiles with city names
     city_map = {c["id"]: c for c in cities}
-    for profiles in [vitrin_profiles, featured_profiles, today_available]:
+    for profiles in [homepage_vitrin, vitrin_profiles, featured_profiles, today_available, new_profiles]:
         for p in profiles:
             city = city_map.get(p.get("city_id"), {})
+            p["city_name"] = city.get("name", "")
+    
+    # Also enrich city vitrin profiles
+    for city in cities:
+        for p in city.get("vitrin_profiles", []):
             p["city_name"] = city.get("name", "")
     
     # Get categories
@@ -1327,12 +1482,22 @@ async def get_homepage_data(lang: str = "tr"):
     for cat in categories:
         cat["name"] = cat.get(f"name_{lang}", cat.get("name_en", ""))
     
+    # Get total counts for stats
+    total_profiles = await db.partner_profiles.count_documents({"status": "approved"})
+    total_cities = len([c for c in cities if c["partner_count"] > 0])
+    
     return {
+        "homepage_vitrin": homepage_vitrin,  # Premium showcase (top tier)
         "vitrin_profiles": vitrin_profiles,
         "featured_profiles": featured_profiles,
         "today_available": today_available,
+        "new_profiles": new_profiles,
         "cities": [c for c in cities if c["partner_count"] > 0],
-        "categories": categories
+        "categories": categories,
+        "stats": {
+            "total_profiles": total_profiles,
+            "total_cities": total_cities
+        }
     }
 
 # ==================== HEALTH CHECK ====================
