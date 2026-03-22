@@ -11,7 +11,7 @@ import { Button } from '../components/ui/button';
 
 const DashboardLayout = () => {
   const { user, api, logout } = useAuth();
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -56,18 +56,18 @@ const DashboardLayout = () => {
   };
 
   const partnerMenuItems = [
-    { path: '', icon: Home, label: 'Dashboard', desc: 'Genel bakış' },
-    { path: '/profil', icon: User, label: 'Profilim', desc: 'Profil düzenle' },
-    { path: '/fotograflar', icon: Image, label: 'Fotoğraflar', desc: 'Galeri yönet' },
-    { path: '/randevular', icon: Calendar, label: 'Randevular', desc: 'Randevu yönetimi', badge: true },
-    { path: '/paketler', icon: Package, label: 'Premium', desc: 'Paketler & öne çıkar' },
-    { path: '/mesajlar', icon: MessageCircle, label: 'Mesajlar', desc: 'Gelen kutusu', badge: true },
+    { path: '', icon: Home, label: t('dashboard') || 'Dashboard', desc: t('overview') || 'Overview' },
+    { path: '/profil', icon: User, label: t('myProfile') || 'My Profile', desc: t('editProfile') || 'Edit profile' },
+    { path: '/fotograflar', icon: Image, label: t('photos') || 'Photos', desc: t('manageGallery') || 'Manage gallery' },
+    { path: '/randevular', icon: Calendar, label: t('appointments') || 'Appointments', desc: t('appointmentManagement') || 'Manage appointments', badge: true },
+    { path: '/paketler', icon: Package, label: t('premium') || 'Premium', desc: t('packagesAndFeature') || 'Packages & feature' },
+    { path: '/mesajlar', icon: MessageCircle, label: t('messages') || 'Messages', desc: t('inbox') || 'Inbox', badge: true },
   ];
 
   const userMenuItems = [
-    { path: '/favoriler', icon: Heart, label: 'Favorilerim', desc: 'Kayıtlı partnerler' },
-    { path: '/mesajlar', icon: MessageCircle, label: 'Mesajlar', desc: 'Gelen kutusu', badge: true },
-    { path: '/ayarlar', icon: Settings, label: 'Ayarlar', desc: 'Hesap ayarları' },
+    { path: '/favoriler', icon: Heart, label: t('myFavorites') || 'My Favorites', desc: t('savedPartners') || 'Saved partners' },
+    { path: '/mesajlar', icon: MessageCircle, label: t('messages') || 'Messages', desc: t('inbox') || 'Inbox', badge: true },
+    { path: '/ayarlar', icon: Settings, label: t('settings') || 'Settings', desc: t('accountSettings') || 'Account settings' },
   ];
 
   const menuItems = isPartner ? partnerMenuItems : userMenuItems;
@@ -118,12 +118,12 @@ const DashboardLayout = () => {
                 {isPartner ? (
                   <>
                     <Crown className="w-3 h-3" />
-                    Partner Hesabı
+                    {t('partnerAccount') || 'Partner Account'}
                   </>
                 ) : (
                   <>
                     <User className="w-3 h-3" />
-                    Üye
+                    {t('member') || 'Member'}
                   </>
                 )}
               </p>
@@ -137,21 +137,21 @@ const DashboardLayout = () => {
                   <Eye className="w-3 h-3 text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity" />
                   <p className="text-xl font-bold text-white font-serif">{stats.views || 0}</p>
                 </div>
-                <p className="text-xs text-white/50 mt-0.5">Görüntüleme</p>
+                <p className="text-xs text-white/50 mt-0.5">{t('views') || 'Views'}</p>
               </div>
               <div className="p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group cursor-pointer">
                 <div className="flex items-center justify-center gap-1">
                   <Heart className="w-3 h-3 text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity" />
                   <p className="text-xl font-bold text-white font-serif">{stats.favorites || 0}</p>
                 </div>
-                <p className="text-xs text-white/50 mt-0.5">Favori</p>
+                <p className="text-xs text-white/50 mt-0.5">{t('favorites') || 'Favorites'}</p>
               </div>
               <div className="p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group cursor-pointer">
                 <div className="flex items-center justify-center gap-1">
                   <MessageCircle className="w-3 h-3 text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity" />
                   <p className="text-xl font-bold text-white font-serif">{stats.messages || 0}</p>
                 </div>
-                <p className="text-xs text-white/50 mt-0.5">Mesaj</p>
+                <p className="text-xs text-white/50 mt-0.5">{t('messages') || 'Messages'}</p>
               </div>
             </div>
           )}
@@ -209,7 +209,7 @@ const DashboardLayout = () => {
               className="w-full justify-start text-white/60 hover:text-[#D4AF37] hover:bg-[#D4AF37]/10 transition-all"
             >
               <Eye className="w-5 h-5 mr-3" />
-              Siteyi Görüntüle
+              {t('viewSite') || 'View Site'}
             </Button>
           </Link>
           <button
@@ -218,7 +218,7 @@ const DashboardLayout = () => {
             data-testid="dashboard-logout"
           >
             <LogOut className="w-5 h-5" />
-            <span>Çıkış Yap</span>
+            <span>{t('logout') || 'Logout'}</span>
           </button>
         </div>
       </aside>
@@ -276,7 +276,7 @@ const DashboardLayout = () => {
                     <p className="text-white font-semibold">{user?.name || user?.email?.split('@')[0]}</p>
                     <p className="text-[#D4AF37] text-xs flex items-center gap-1">
                       <Crown className="w-3 h-3" />
-                      {isPartner ? 'Partner' : 'Üye'}
+                      {isPartner ? 'Partner' : (t('member') || 'Member')}
                     </p>
                   </div>
                 </div>
@@ -285,15 +285,15 @@ const DashboardLayout = () => {
                   <div className="mt-3 grid grid-cols-3 gap-2 text-center">
                     <div className="p-2 rounded-lg bg-white/5">
                       <p className="text-lg font-bold text-white">{stats.views || 0}</p>
-                      <p className="text-xs text-white/50">Görüntüleme</p>
+                      <p className="text-xs text-white/50">{t('views') || 'Views'}</p>
                     </div>
                     <div className="p-2 rounded-lg bg-white/5">
                       <p className="text-lg font-bold text-white">{stats.favorites || 0}</p>
-                      <p className="text-xs text-white/50">Favori</p>
+                      <p className="text-xs text-white/50">{t('favorites') || 'Favorites'}</p>
                     </div>
                     <div className="p-2 rounded-lg bg-white/5">
                       <p className="text-lg font-bold text-white">{stats.messages || 0}</p>
-                      <p className="text-xs text-white/50">Mesaj</p>
+                      <p className="text-xs text-white/50">{t('messages') || 'Messages'}</p>
                     </div>
                   </div>
                 )}
@@ -337,7 +337,7 @@ const DashboardLayout = () => {
                 <Link to={`/${lang}`} onClick={() => setSidebarOpen(false)}>
                   <Button variant="ghost" className="w-full justify-start text-white/60 hover:text-[#D4AF37]">
                     <Eye className="w-5 h-5 mr-3" />
-                    Siteyi Görüntüle
+                    {t('viewSite') || 'View Site'}
                   </Button>
                 </Link>
                 <button
@@ -345,7 +345,7 @@ const DashboardLayout = () => {
                   className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 w-full mt-2 hover:bg-red-400/10"
                 >
                   <LogOut className="w-5 h-5" />
-                  <span>Çıkış Yap</span>
+                  <span>{t('logout') || 'Logout'}</span>
                 </button>
               </div>
             </div>

@@ -42,9 +42,9 @@ const UserSettingsPage = () => {
       if (formData.language !== lang) {
         changeLang(formData.language);
       }
-      toast.success('Ayarlar kaydedildi');
+      toast.success(t('settingsSaved') || 'Settings saved');
     } catch (error) {
-      toast.error('Bir hata oluştu');
+      toast.error(t('error') || 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -67,7 +67,7 @@ const UserSettingsPage = () => {
                 className="input-glass pl-12 opacity-50"
               />
             </div>
-            <p className="text-white/40 text-xs mt-1">E-posta değiştirilemez</p>
+            <p className="text-white/40 text-xs mt-1">{t('emailCannotChange') || 'Email cannot be changed'}</p>
           </div>
 
           {/* Name */}
@@ -79,7 +79,7 @@ const UserSettingsPage = () => {
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="Adınız Soyadınız"
+                placeholder={t('yourName') || 'Your Name'}
                 className="input-glass pl-12"
                 data-testid="settings-name"
               />
@@ -128,22 +128,22 @@ const UserSettingsPage = () => {
             data-testid="save-settings"
           >
             <Save className="w-5 h-5 mr-2" />
-            {loading ? 'Kaydediliyor...' : t('save')}
+            {loading ? (t('saving') || 'Saving...') : t('save')}
           </Button>
         </form>
       </div>
 
       {/* Account Info */}
       <div className="glass rounded-xl p-6 mt-6">
-        <h3 className="text-white font-semibold mb-4">Hesap Bilgileri</h3>
+        <h3 className="text-white font-semibold mb-4">{t('accountInfo') || 'Account Info'}</h3>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between text-white/60">
-            <span>Hesap Türü:</span>
-            <span className="capitalize">{user?.role}</span>
+            <span>{t('accountType') || 'Account Type'}:</span>
+            <span className="capitalize">{user?.role === 'user' ? t('member') || 'User' : user?.role}</span>
           </div>
           <div className="flex justify-between text-white/60">
-            <span>Kayıt Tarihi:</span>
-            <span>{user?.created_at ? new Date(user.created_at).toLocaleDateString('tr-TR') : '-'}</span>
+            <span>{t('registrationDate') || 'Registration Date'}:</span>
+            <span>{user?.created_at ? new Date(user.created_at).toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US') : '-'}</span>
           </div>
         </div>
       </div>
