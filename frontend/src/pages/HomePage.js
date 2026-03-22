@@ -351,7 +351,7 @@ const HomePage = () => {
   const [searchCity, setSearchCity] = useState('');
   const [searchGender, setSearchGender] = useState('');
   const [searchServiceType, setSearchServiceType] = useState('');
-  const [searchOrientation, setSearchOrientation] = useState('');
+  const [searchServes, setSearchServes] = useState('');
 
   useEffect(() => {
     fetchHomeData();
@@ -389,7 +389,7 @@ const HomePage = () => {
     if (searchCity) params.append('city', searchCity);
     if (searchGender) params.append('gender', searchGender);
     if (searchServiceType) params.append('service', searchServiceType);
-    if (searchOrientation) params.append('orientation', searchOrientation);
+    if (searchServes) params.append('serves', searchServes);
     if (params.toString()) url += `?${params.toString()}`;
     navigate(url);
   };
@@ -509,26 +509,24 @@ const HomePage = () => {
                     </SelectTrigger>
                     <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
                       <SelectItem value="all">Tüm Hizmetler</SelectItem>
-                      <SelectItem value="dinner-companion">🍷 Yemek Eşliği</SelectItem>
-                      <SelectItem value="event-companion">🎭 Davet Eşliği</SelectItem>
-                      <SelectItem value="gf-bf-experience">💕 Sevgili Deneyimi</SelectItem>
-                      <SelectItem value="sleep-companion">🌙 Uyku Arkadaşlığı</SelectItem>
-                      <SelectItem value="spouse-roleplay">💍 Eş Rolleri</SelectItem>
-                      <SelectItem value="travel-companion">✈️ Gezi Eşliği</SelectItem>
+                      {(homeData?.categories || []).map((cat) => (
+                        <SelectItem key={cat.id || cat.slug} value={cat.slug}>
+                          {cat.icon || '💕'} {cat.name || cat.name_tr}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
 
-                  {/* Orientation */}
-                  <Select value={searchOrientation || "all"} onValueChange={(v) => setSearchOrientation(v === "all" ? "" : v)}>
-                    <SelectTrigger className="input-glass h-14 text-base" data-testid="search-orientation">
-                      <SelectValue placeholder="🌈 Yönelim" />
+                  {/* Who They Serve */}
+                  <Select value={searchServes || "all"} onValueChange={(v) => setSearchServes(v === "all" ? "" : v)}>
+                    <SelectTrigger className="input-glass h-14 text-base" data-testid="search-serves">
+                      <SelectValue placeholder="✨ Kime Hizmet" />
                     </SelectTrigger>
                     <SelectContent className="bg-[#15151F] border-[#E91E63]/20">
-                      <SelectItem value="all">Tüm Yönelimler</SelectItem>
-                      <SelectItem value="heterosexual">Heteroseksüel</SelectItem>
-                      <SelectItem value="lesbian">Lezbiyen</SelectItem>
-                      <SelectItem value="gay">Gay</SelectItem>
-                      <SelectItem value="bisexual">Biseksüel</SelectItem>
+                      <SelectItem value="all">Tümü</SelectItem>
+                      <SelectItem value="men">👨 Erkeklere</SelectItem>
+                      <SelectItem value="women">👩 Kadınlara</SelectItem>
+                      <SelectItem value="everyone">✨ Herkese</SelectItem>
                     </SelectContent>
                   </Select>
 

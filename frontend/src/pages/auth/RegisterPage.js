@@ -6,11 +6,11 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { toast } from 'sonner';
 
-const orientationOptions = [
-  { value: 'heterosexual', label: 'Heteroseksüel', icon: '💑' },
-  { value: 'lesbian', label: 'Lezbiyen', icon: '👩‍❤️‍👩' },
-  { value: 'gay', label: 'Gay', icon: '👨‍❤️‍👨' },
-  { value: 'bisexual', label: 'Biseksüel', icon: '💕' },
+// What they're interested in (for users searching partners)
+const interestOptions = [
+  { value: 'men', label: 'Erkekler', icon: '👨' },
+  { value: 'women', label: 'Kadınlar', icon: '👩' },
+  { value: 'everyone', label: 'Herkes', icon: '✨' },
 ];
 
 const RegisterPage = () => {
@@ -29,7 +29,7 @@ const RegisterPage = () => {
     confirmPassword: '',
     role: isPartnerRegistration ? 'partner' : 'user',
     language: lang,
-    orientations: []
+    interested_in: []
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -38,13 +38,13 @@ const RegisterPage = () => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const toggleOrientation = (orientation) => {
+  const toggleInterest = (interest) => {
     setFormData(prev => {
-      const current = prev.orientations || [];
-      if (current.includes(orientation)) {
-        return { ...prev, orientations: current.filter(o => o !== orientation) };
+      const current = prev.interested_in || [];
+      if (current.includes(interest)) {
+        return { ...prev, interested_in: current.filter(o => o !== interest) };
       } else {
-        return { ...prev, orientations: [...current, orientation] };
+        return { ...prev, interested_in: [...current, interest] };
       }
     });
   };
@@ -289,25 +289,25 @@ const RegisterPage = () => {
               </div>
             </div>
 
-            {/* Orientation Selection - For personalized experience */}
+            {/* Interest Selection - For personalized experience */}
             <div>
               <label className="text-white/70 text-sm mb-3 block font-medium flex items-center gap-2">
                 <Heart className="w-4 h-4 text-[#E91E63]" />
-                İlgi Alanınız (İsteğe bağlı)
+                Kimi Arıyorsunuz? (İsteğe bağlı)
               </label>
-              <p className="text-white/40 text-xs mb-3">Kişiselleştirilmiş deneyim için seçin</p>
-              <div className="grid grid-cols-2 gap-2">
-                {orientationOptions.map((option) => (
+              <p className="text-white/40 text-xs mb-3">Size uygun partnerleri gösterelim</p>
+              <div className="grid grid-cols-3 gap-2">
+                {interestOptions.map((option) => (
                   <button
                     key={option.value}
                     type="button"
-                    onClick={() => toggleOrientation(option.value)}
+                    onClick={() => toggleInterest(option.value)}
                     className={`p-3 rounded-xl border transition-all text-sm flex items-center justify-center gap-2 ${
-                      formData.orientations?.includes(option.value)
+                      formData.interested_in?.includes(option.value)
                         ? 'bg-[#E91E63]/20 border-[#E91E63] text-[#FF6090]'
                         : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:border-white/20'
                     }`}
-                    data-testid={`orientation-${option.value}`}
+                    data-testid={`interest-${option.value}`}
                   >
                     <span>{option.icon}</span>
                     <span>{option.label}</span>
