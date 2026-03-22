@@ -160,6 +160,8 @@ const PartnerProfileEdit = () => {
   useEffect(() => {
     if (formData.city_id) {
       fetchDistricts(formData.city_id);
+    } else {
+      setDistricts([]);
     }
   }, [formData.city_id]);
 
@@ -217,10 +219,15 @@ const PartnerProfileEdit = () => {
   };
 
   const fetchDistricts = async (cityId) => {
+    if (!cityId) {
+      setDistricts([]);
+      return;
+    }
     try {
       const response = await axios.get(`${API_URL}/api/cities/${cityId}/districts`);
-      setDistricts(response.data);
+      setDistricts(response.data || []);
     } catch (error) {
+      console.log('Districts not available for this city');
       setDistricts([]);
     }
   };

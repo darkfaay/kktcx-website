@@ -475,6 +475,30 @@ async def get_cities(lang: str = "tr"):
 async def get_catalog_cities(lang: str = "tr"):
     return await get_cities(lang)
 
+@app.get("/api/cities/{city_id}/districts")
+async def get_city_districts(city_id: str, lang: str = "tr"):
+    """Get districts for a specific city"""
+    # For now, return empty array as districts are not implemented
+    # This prevents the frontend from crashing
+    city = await db.cities.find_one({"$or": [{"id": city_id}, {"slug": city_id}]}, {"_id": 0})
+    if not city:
+        return []
+    
+    districts = city.get("districts", [])
+    result = []
+    for district in districts:
+        if isinstance(district, dict):
+            names = district.get("names", {})
+            result.append({
+                "id": district.get("id", district.get("slug", "")),
+                "slug": district.get("slug", ""),
+                "name": names.get(lang, names.get("tr", district.get("name_tr", district.get("name", ""))))
+            })
+        elif isinstance(district, str):
+            result.append({"id": district, "slug": district, "name": district})
+    
+    return result
+
 @app.get("/api/categories")
 async def get_categories(lang: str = "tr"):
     categories = await db.categories.find({}, {"_id": 0}).to_list(100)
