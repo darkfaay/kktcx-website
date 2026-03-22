@@ -224,6 +224,8 @@ const translations = {
     yourName: 'Adınız Soyadınız',
     settingsSaved: 'Ayarlar kaydedildi',
     saving: 'Kaydediliyor...',
+    buyNow: 'Satın Al',
+    currentPackage: 'Mevcut Paket',
   },
   en: {
     home: 'Home',
@@ -364,6 +366,8 @@ const translations = {
     yourName: 'Your Name',
     settingsSaved: 'Settings saved',
     saving: 'Saving...',
+    buyNow: 'Buy Now',
+    currentPackage: 'Current Package',
   },
   ru: {
     home: 'Главная',
@@ -448,6 +452,8 @@ const translations = {
     yourName: 'Ваше имя',
     settingsSaved: 'Настройки сохранены',
     saving: 'Сохранение...',
+    buyNow: 'Купить',
+    currentPackage: 'Текущий пакет',
   },
   de: {
     home: 'Startseite',
@@ -532,6 +538,8 @@ const translations = {
     yourName: 'Ihr Name',
     settingsSaved: 'Einstellungen gespeichert',
     saving: 'Speichern...',
+    buyNow: 'Jetzt kaufen',
+    currentPackage: 'Aktuelles Paket',
   },
   el: {
     home: 'Αρχική',

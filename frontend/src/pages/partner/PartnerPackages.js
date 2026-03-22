@@ -188,12 +188,13 @@ const PartnerPackages = () => {
 
               {/* Action */}
               <Button
+                variant="ghost"
                 className={`w-full py-6 ${isPremium ? 'btn-primary animate-pulse-gold' : 'btn-outline'}`}
                 onClick={() => handlePurchase(pkg.id)}
                 disabled={purchasing || isCurrentPackage}
                 data-testid={`buy-${pkg.package_type}`}
               >
-                {isCurrentPackage ? 'Mevcut Paket' : 'Satın Al'}
+                {isCurrentPackage ? (t('currentPackage') || 'Mevcut Paket') : (t('buyNow') || 'Satın Al')}
               </Button>
             </div>
           );
